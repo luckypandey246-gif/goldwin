@@ -1364,44 +1364,62 @@ function viewTicketDetails(pId){
     document.getElementById('receipt-modal').style.display='flex';
 }
 
-function getClaimedAmount(t){
-  const tDate=t.advanceDate;const tTime=normalizeTimeString(t.advanceTime); const match=resultHistory.find(r=>r.date===tDate&&r.time===tTime); if(!match)return 0;
-  if(t.is2D){ if(!match.D)return 0; const parts=t.number.split('-'); if(match.D[parts[0]]===parts[1])return t.points*90; return 0; } 
-  else { if(t.panel==='A'&&match.A===t.number)return t.points*900; if(t.panel==='B'&&match.B===t.number)return t.points*900; if(t.panel==='C'&&match.C===t.number)return t.points*900; return 0; }
-}
+function getClaimedAmount(t) {
+    if (typeof match === 'undefined' || !match) return 0;
+    if (match.D === true) return 0; 
 
-// ✅ FIXED: String comparison + correct status filter + no reload
-async function claimTicket(pId){
-    const tGroup = boughtTickets.filter(t => 
-        String(t.purchaseId || t.id) === String(pId) && t.status !== 'CLAIMED'
-    );
-    if(tGroup.length === 0) return showCustomAlert("Notice", "No pending winning tickets found.");
-    
-    let totalWin = 0; 
-    tGroup.forEach(t => { totalWin += getClaimedAmount(t); }); 
-    if(totalWin <= 0) return showCustomAlert("Notice", "No winning amount to claim.");
-    
-    showCustomConfirm("Claim Winnings", `Do you want to claim ₹${totalWin}?`, async function(ok){
-        if(ok){
-            try {
-                const batch = db.batch(); 
-                tGroup.forEach(t => { 
-                    if(getClaimedAmount(t) > 0) 
-                        batch.update(db.collection("tickets").doc(t.id), { status: 'CLAIMED' }); 
-                });
-                batch.update(db.collection("users").doc(currentUser.uid), 
-                    { balance: firebase.firestore.FieldValue.increment(totalWin) });
-                await batch.commit(); 
-                playWinSound(); 
-                showCoinSparkles(); 
-                showCustomAlert("🎉 CONGRATULATIONS! 🎉", 
-                    `You have successfully claimed ₹${totalWin} points.`);
-            } catch(e) { 
-                showCustomAlert("Error", e.message); 
-            }
+    let pName = String(t.panel).toUpperCase().replace(/[\s-]/g, ''); // A-FP -> AFP
+    let tNum = String(t.number).trim();
+
+    let rA = match.A ? String(match.A).trim() : '';
+    let rB = match.B ? String(match.B).trim() : '';
+    let rC = match.C ? String(match.C).trim() : '';
+
+    // 1. STRAIGHT (Exact Match)
+    if (pName.includes('STRAIGHT') || pName === 'S' || pName === 'SP') {
+        if (tNum === rA || tNum === rB || tNum === rC) return t.payout;
+    }
+
+    // 2. BOX (Any Order Match)
+    if (pName.includes('BOX')) {
+        let s = tNum.split('').sort().join('');
+        if (s === rA.split('').sort().join('') || 
+            s === rB.split('').sort().join('') || 
+            s === rC.split('').sort().join('')) return t.payout;
+    }
+
+    // 3. FRONT PAIR (F, FP, FRONT, A-FP sabko pakdega)
+    if (pName.includes('FP') || pName.includes('FRONT') || pName === 'F' || pName.endsWith('F')) {
+        if (tNum.length >= 2) {
+            if (rA.startsWith(tNum) || rB.startsWith(tNum) || rC.startsWith(tNum)) return t.payout;
+        } else {
+            if (rA[0] === tNum || rB[0] === tNum || rC[0] === tNum) return t.payout;
         }
-    });
-}
+    }
+
+    // 4. BACK PAIR (B, BP, BACK, A-BP sabko pakdega)
+    if (pName.includes('BP') || pName.includes('BACK') || pName === 'B' || pName.endsWith('B')) {
+        if (tNum.length >= 2) {
+            if (rA.endsWith(tNum) || rB.endsWith(tNum) || rC.endsWith(tNum)) return t.payout;
+        } else {
+            if (rA[rA.length-1] === tNum || rB[rB.length-1] === tNum || rC[rC.length-1] === tNum) return t.payout;
+        }
+    }
+
+    // 5. ANY PAIR (A, AP, ANY sabko pakdega)
+    if (pName.includes('ANY') || pName === 'A' || pName.endsWith('A')) {
+        if (tNum.length >= 2) {
+            let d1 = tNum[0], d2 = tNum[1];
+            if ((rA.includes(d1) && rA.includes(d2)) || 
+                (rB.includes(d1) && rB.includes(d2)) || 
+                (rC.includes(d1) && rC.includes(d2))) return t.payout;
+        } else {
+            if (rA.includes(tNum) || rB.includes(tNum) || rC.includes(tNum)) return t.payout;
+        }
+    }
+
+    return 0; 
+  }
 
 function renderCancel(){
   const list=document.getElementById('cancel-list');if(!list)return;let html=''; const pending=boughtTickets.filter(t=>t.status==='PENDING'); const grouped={};
