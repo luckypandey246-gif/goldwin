@@ -1,0 +1,1888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Goldwin - 3D & 2D Game</title>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
+body{background:#f0f0f0;font-size:12px;padding-bottom:150px;overflow-x:hidden}
+@keyframes popIn{0%{transform:scale(0.3) rotate(-10deg);opacity:0}70%{transform:scale(1.05) rotate(2deg)}100%{transform:scale(1) rotate(0deg);opacity:1}}
+@keyframes coinFall{0%{transform:translateY(0) rotate(0deg);opacity:1}100%{transform:translateY(100vh) rotate(360deg);opacity:0}}
+@keyframes pulseGlow{0%{box-shadow:0 0 5px #fff,0 0 10px #fbc02d}50%{box-shadow:0 0 20px #fff,0 0 30px #fbc02d}100%{box-shadow:0 0 5px #fff,0 0 10px #fbc02d}}
+#auth-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:#f0f0f0;z-index:9999;display:flex;justify-content:center;align-items:center;padding:20px;overflow-y:auto}
+.auth-container{width:100%;max-width:400px;display:flex;flex-direction:column;gap:15px;margin:auto;padding-bottom:20px}
+.public-header{background:#fff;padding:20px;border-radius:10px;box-shadow:0 4px 15px rgba(0,0,0,0.1);text-align:center}
+.goldwin-logo{display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:10px}
+.logo-icon{width:70px;height:70px;border-radius:50%;background:#1a1a1a;border:3px solid #C5A059;color:#C5A059;font-family:'Times New Roman',serif;font-size:45px;line-height:65px;font-weight:bold;box-shadow:0 0 10px rgba(197,160,89,0.5)}
+.logo-text{font-family:'Times New Roman',serif;font-size:28px;color:#C5A059;font-weight:bold;letter-spacing:3px;margin-top:5px;text-shadow:1px 1px 0 #fff,-1px -1px 0 #8a6d2b}
+.catchy-text{font-size:20px;font-weight:bold;color:#d32f2f;margin-bottom:5px;text-transform:uppercase;letter-spacing:1px}
+.disclaimer-text{font-size:12px;color:#e65100;font-weight:bold;margin-bottom:15px;line-height:1.4}
+.public-res-btns{display:flex;gap:10px;justify-content:center;margin-bottom:5px}
+.public-res-btns button{flex:1;padding:12px;border:none;border-radius:8px;font-size:16px;font-weight:bold;color:#fff;cursor:pointer;box-shadow:0 4px 6px rgba(0,0,0,0.2)}
+.btn-2d{background:linear-gradient(135deg,#1976d2,#0d47a1)}
+.btn-3d{background:linear-gradient(135deg,#4caf50,#1b5e20)}
+.divider{border-bottom:2px dashed #ccc;margin:15px 0}
+.auth-box{background:#fff;padding:20px;border-radius:10px;box-shadow:0 4px 15px rgba(0,0,0,0.2);width:100%;text-align:center}
+.auth-box h2{color:#333;margin-bottom:15px;font-size:20px}
+.auth-input{width:100%;padding:12px;margin-bottom:12px;border:1px solid #ccc;border-radius:5px;font-size:15px;outline:none}
+.auth-btn{width:100%;padding:12px;background:#4caf50;color:#fff;font-weight:bold;border:none;border-radius:5px;font-size:16px;cursor:pointer;margin-bottom:15px;box-shadow:0 3px 6px rgba(0,0,0,0.2)}
+.auth-toggle{font-size:13px;color:#1976d2;cursor:pointer;font-weight:bold}
+.auth-error{color:red;font-size:13px;margin-top:10px;font-weight:bold}
+.contact-us{text-align:center;margin-top:10px;margin-bottom:20px}
+.contact-us p{font-size:14px;color:#555;font-weight:bold;margin-bottom:10px}
+.social-links{display:flex;justify-content:center;gap:15px}
+.social-icon{width:45px;height:45px;border-radius:50%;display:flex;justify-content:center;align-items:center;color:#fff;text-decoration:none;box-shadow:0 3px 6px rgba(0,0,0,0.2)}
+.social-icon svg{width:22px;height:22px;fill:#fff}
+.whatsapp{background:#25D366}.facebook{background:#1877F2}.instagram{background:linear-gradient(45deg,#f09433,#dc2743,#bc1888)}
+.top-bar{background:#1a1a1a;color:#fff;padding:4px 10px;display:flex;justify-content:space-between;align-items:center;font-size:12px}
+.points-bal{color:#0f0;font-weight:bold}
+.timer-bar{background:#80cbc4;text-align:center;font-size:16px;font-weight:bold;padding:6px;color:#000;border-bottom:2px solid #4db6ac}
+.timer-label{font-size:14px;color:#d32f2f;font-weight:bold;margin-right:5px}
+.timer-val{font-size:20px;color:#000}
+.panels{display:flex;text-align:center;font-weight:bold;color:#fff;font-size:18px}
+.panel{flex:1;padding:8px}
+.panel-A{background:#4caf50}.panel-B{background:#f44336}.panel-C{background:#795548}
+.panel-nums{display:flex;background:#ff9800;color:#000;font-size:20px;font-weight:bold;letter-spacing:3px}
+.panel-nums div{flex:1;border-right:1px solid #000;padding:6px;text-align:center}
+.btn-row{display:flex;background:#673ab7;color:#fff;text-align:center;font-size:12px}
+.btn-row div{flex:1;padding:10px 8px;border-right:1px solid #fff;cursor:pointer;font-weight:bold}
+.selector-row{display:flex;flex-wrap:wrap;background:#e0f7fa;padding:5px;gap:4px;justify-content:center}
+.selector-row button{padding:5px 8px;border:1px solid #ccc;background:#fff;cursor:pointer;font-weight:bold;font-size:11px}
+.selector-row button.active{background:#4caf50;color:#fff;border-color:#4caf50}
+.checkbox-row{display:flex;background:#b2dfdb;padding:6px;gap:10px;justify-content:center;flex-wrap:wrap;font-size:13px;font-weight:bold}
+.checkbox-row label{display:flex;align-items:center;gap:3px;cursor:pointer;font-size:14px}
+.lbl-A{color:#2e7d32}.lbl-B{color:#c62828}.lbl-C{color:#5d4037}
+.add-num-sec{background:#c8e6c9;padding:10px;text-align:center}
+.add-num-box{width:100%;padding:8px;font-size:16px;text-align:center;border:2px solid #3f51b5;border-radius:5px;margin-bottom:2px;font-weight:bold}
+.range-sec{display:flex;justify-content:center;align-items:center;gap:4px;margin-bottom:6px;font-weight:bold;flex-wrap:wrap;font-size:11px}
+.range-sec input{width:40px;padding:4px;text-align:center;font-size:11px}
+.lucky-btn{background:#9c27b0;color:#fff;border:none;padding:4px 10px;border-radius:3px;font-weight:bold;cursor:pointer;font-size:11px}
+.dropdown-sec{display:flex;justify-content:center;gap:6px;margin-bottom:6px;font-size:11px}
+.dropdown-sec select,.dropdown-sec input{padding:4px;border-radius:5px;border:1px solid #ccc;font-size:11px}
+.points-sec{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;font-weight:bold;align-items:center;font-size:11px}
+.free-buy-btn{width:100%;padding:10px;background:#4caf50;color:#fff;font-size:14px;font-weight:bold;border:none;border-radius:5px;margin-top:10px;cursor:pointer;box-shadow:0 4px 6px rgba(0,0,0,.2)}
+.cart-preview-sec{background:#fff;padding:15px 10px;min-height:80px;border-top:2px dashed #ccc;box-shadow:inset 0 2px 5px rgba(0,0,0,0.05)}
+#cart-preview{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.cart-pill{background:#e0f7fa;border:1px solid #00acc1;color:#006064;padding:4px 10px;border-radius:15px;font-size:13px;font-weight:bold;display:flex;align-items:center;box-shadow:0 1px 3px rgba(0,0,0,0.1)}
+.cart-pill span{color:red;font-size:18px;margin-left:5px;line-height:1;cursor:pointer}
+.nav-row{display:flex;width:100%}
+.nav-row div{flex:1;padding:12px 5px;text-align:center;color:#fff;font-weight:bold;font-size:14px}
+.nav-row .cancel{background:#673ab7}.nav-row .hist{background:#4caf50}
+.nav-row .res{background:#673ab7}.nav-row .adv{background:#4caf50}
+.dark-blue-bar{background:#1a237e;padding:5px;display:flex;gap:5px;overflow-x:auto}
+.dark-blue-bar button{background:#1a237e;color:#fff;border:1px solid #fff;padding:8px 15px;border-radius:3px;font-weight:bold;font-size:14px;white-space:nowrap;cursor:pointer}
+.dark-blue-bar button.active{background:#fff;color:#1a237e}
+#tab-btn-ALL{background:#ff9800;border-color:#fff}#tab-btn-ALL.active{background:#fff;color:#e65100}
+.grey-bar-1{background:#bdbdbd;padding:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;font-weight:bold}
+.prefix-btn{padding:6px 14px;background:#fff;border:1px solid #90caf9;border-radius:4px;font-weight:bold;font-size:13px;cursor:pointer;color:#1565c0}
+.prefix-btn.active{background:#4caf50;color:#fff;border-color:#2e7d32}
+.prefix-btn.viewing{box-shadow:0 0 0 3px #ff9800}
+.grey-bar-2{background:#9e9e9e;padding:8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px;font-weight:bold;border-bottom:2px solid #757575}
+.filter-group{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:4px 8px;background:#c5c5c5;border-radius:4px}
+.filter-label{background:#455a64;color:#fff;padding:3px 8px;border-radius:3px;font-size:11px;font-weight:bold}
+.filter-divider{width:2px;height:20px;background:#666;margin:0 4px}
+.grid-2d-wrapper{background:#fff;overflow-x:auto}
+.grid-2d{display:grid;grid-template-columns:45px 55px repeat(10,1fr);gap:1px;background:#999;border:1px solid #999;min-width:650px;font-size:12px}
+.grid-head-all{grid-column:1/-1;background:#eee;padding:8px;font-weight:bold;font-size:14px;color:#333}
+.grid-head{background:#f5f5f5;color:#333;text-align:center;font-weight:bold;padding:6px 0;border-bottom:1px solid #ccc}
+.grid-block-input{background:#e0e0e0;padding:0;display:flex;align-items:center;justify-content:center}
+.grid-block-input input{width:100%;height:100%;border:1px solid #ccc;background:#fff;text-align:center;font-size:14px;font-weight:bold;outline:none;padding:0;margin:0}
+.grid-block-label{background:#e0e0e0;color:#333;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:13px;border-right:1px solid #ccc}
+.cell-2d{display:flex;flex-direction:column;background:#fff;cursor:pointer;user-select:none;transition:opacity .15s}
+.cell-2d .cell-top{background:#e0e0e0;color:#333;font-size:12px;padding:4px 0;text-align:center;font-weight:bold;border-bottom:1px solid #ccc}
+.cell-2d .cell-bottom{background:#fff;color:#333;font-size:13px;padding:6px 0;text-align:center;font-weight:bold;min-height:24px}
+.cell-2d.active .cell-bottom{background:#bbdefb;color:#000}
+.cell-2d.filtered-out{opacity:.18;pointer-events:none}
+.hidden{display:none!important}
+.page-overlay{background:#fff;margin:10px;padding:10px;border-radius:5px;min-height:300px;box-shadow:0 2px 5px rgba(0,0,0,.1);display:none}
+.page-header{font-size:14px;font-weight:bold;border-bottom:2px solid #333;padding-bottom:5px;margin-bottom:10px;color:#333;display:flex;justify-content:space-between;align-items:center}
+.btn-sm{padding:4px 10px;border:none;border-radius:3px;font-weight:bold;cursor:pointer;color:#fff}
+.reprint-card{display:flex;justify-content:space-between;align-items:center;padding:10px;border:1px solid #ddd;border-radius:5px;margin-bottom:10px;background:#fafafa;flex-wrap:wrap;gap:10px}
+.reprint-info{font-size:13px;font-weight:bold;color:#333;line-height:1.6;flex:1;min-width:150px}
+.claim-btn{background:#4caf50;color:#fff;padding:6px 12px;border:none;border-radius:4px;font-weight:bold;cursor:pointer;font-size:13px;box-shadow:0 2px 4px rgba(0,0,0,.2)}
+.view-btn{background:#1976d2;color:#fff;padding:6px 12px;border:none;border-radius:4px;font-weight:bold;cursor:pointer;font-size:13px;box-shadow:0 2px 4px rgba(0,0,0,.2)}
+.not-win{color:#f44336;font-weight:bold;font-size:14px}
+.claimed{color:#2196F3;font-weight:bold;font-size:14px}
+.cancel-tkt-btn{background:#f44336;color:#fff;padding:8px 15px;border:none;border-radius:4px;font-weight:bold;cursor:pointer;font-size:12px}
+#page-2d-result,#page-result{padding:0;margin:0;background:#f0f0f0;min-height:100vh;border:none;box-shadow:none}
+.stat-box{background:#f8f9fa;border:1px solid #ddd;border-radius:8px;padding:15px;margin-bottom:15px;text-align:center}
+.stat-box h4{color:#555;margin-bottom:5px;font-size:14px}
+.stat-box .val{font-size:24px;font-weight:bold;color:#1976d2}
+.stat-box.profit .val{color:#4caf50}
+.stat-box.loss .val{color:#f44336}
+.custom-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:1000;justify-content:center;align-items:center}
+.custom-modal-content{background:#fff;padding:20px;border-radius:8px;width:90%;max-width:350px;text-align:center}
+.custom-modal-title{font-size:18px;font-weight:bold;margin-bottom:10px}
+.custom-modal-body{font-size:14px;margin-bottom:20px;white-space:pre-line}
+.custom-modal-buttons{display:flex;gap:10px}
+.btn-yes{background:#4caf50;color:#fff;padding:10px;border:none;border-radius:4px;font-weight:bold;flex:1;cursor:pointer}
+.btn-no{background:#f44336;color:#fff;padding:10px;border:none;border-radius:4px;font-weight:bold;flex:1;cursor:pointer}
+.result-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);z-index:1001;justify-content:center;align-items:center}
+.result-modal-content{background:#fff;padding:20px;border-radius:15px;width:90%;max-width:350px;text-align:center;max-height:90vh;overflow-y:auto;animation:popIn 0.6s cubic-bezier(0.175,0.885,0.32,1.275) forwards;border:4px solid #fbc02d}
+.result-boxes{display:flex;justify-content:space-around;margin:20px 0;gap:10px}
+.result-box{flex:1;text-align:center;border-radius:10px;overflow:hidden;border:2px solid #ddd}
+.result-box-header{color:#fff;padding:8px;font-weight:bold;font-size:16px;text-transform:uppercase;letter-spacing:2px}
+.result-box-val{padding:15px 5px;font-size:28px;background:#fff;letter-spacing:2px;color:#000;font-weight:bold;animation:pulseGlow 2s infinite}
+.bg-A{background:#4caf50}.bg-B{background:#f44336}.bg-C{background:#795548}
+.bottom-bar{position:fixed;bottom:0;width:100%;height:50px;background:#e0e0e0;border-top:3px solid #333;padding:8px 15px;font-weight:bold;display:flex;justify-content:space-between;align-items:center;z-index:101}
+.summary-total{color:#d32f2f;font-size:16px}
+.action-btn{padding:8px 15px;border:none;border-radius:5px;font-weight:bold;cursor:pointer;color:white;font-size:12px}
+.btn-del{background:#f44336}
+.btn-refresh{background:#2196F3}
+.game-tabs{position:fixed;bottom:50px;left:0;width:100%;z-index:100;display:flex;background:#000;padding:4px;box-shadow:0 -2px 5px rgba(0,0,0,0.2)}
+.game-tab-btn{flex:1;padding:8px;color:#fff;border:none;font-weight:bold;cursor:pointer;font-size:12px}
+.game-tab-btn.active{background:#4caf50}
+.game-tab-btn.inactive{background:#333}
+#multiplier-modal{display:none;position:fixed;bottom:88px;left:0;width:100%;z-index:1000;background:#fff;box-shadow:0 -4px 10px rgba(0,0,0,0.3)}
+.mult-sheet-header{display:flex;justify-content:space-between;align-items:center;padding:10px;background:#f5f5f5;border-bottom:1px solid #ddd;font-weight:bold;color:#333}
+.mult-sheet-header button{background:#f44336;color:white;border:none;padding:4px 10px;border-radius:3px;font-weight:bold;cursor:pointer}
+.mult-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:10px;max-height:250px;overflow-y:auto}
+.mult-btn{padding:10px;font-size:16px;font-weight:bold;border:1px solid #ccc;border-radius:5px;background:#fff;cursor:pointer;color:#333}
+.mult-btn.clear{background:#f44336;color:white;border:none;grid-column:span 4}
+.receipt-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);z-index:2000;justify-content:center;align-items:center}
+.receipt-content{background:#fff;width:95%;max-width:380px;padding:20px;border-radius:4px;box-shadow:0 4px 15px rgba(0,0,0,.3);font-family:'Courier New',Courier,monospace;display:flex;flex-direction:column;max-height:95vh}
+.receipt-header{text-align:center;margin-bottom:10px}
+.receipt-logo-container{display:flex;flex-direction:column;align-items:center;justify-content:center}
+.receipt-logo-icon{display:inline-block;width:65px;height:65px;border-radius:50%;background:#1a1a1a;border:3px solid #C5A059;color:#C5A059;font-family:'Times New Roman',serif;font-size:40px;line-height:60px;font-weight:bold;box-shadow:0 0 10px rgba(197,160,89,0.5)}
+.receipt-logo-ornament{color:#C5A059;font-size:14px;margin:8px 0 0 0;display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:2px}
+.receipt-logo-ornament span{display:inline-block;width:40px;height:1px;background:#C5A059}
+.receipt-logo-title{font-family:'Times New Roman',serif;font-size:30px;color:#C5A059;font-weight:bold;letter-spacing:4px;margin-top:2px;line-height:1;text-shadow:1px 1px 0 #fff,-1px -1px 0 #8a6d2b}
+.receipt-subtitle{font-family:Arial,sans-serif;font-size:14px;color:#555;margin-top:10px;letter-spacing:3px}
+.receipt-divider{border-bottom:1px dashed #333;margin:10px 0}
+.receipt-info{font-size:13px;line-height:1.6;margin-bottom:10px;font-family:Arial,sans-serif;font-weight:bold}
+.receipt-info div{display:flex;justify-content:space-between}
+.receipt-draw-times{margin-bottom:10px;font-family:Arial,sans-serif;font-weight:bold;font-size:13px}
+.receipt-draw-badge{display:inline-block;border:1px solid #ccc;padding:2px 8px;border-radius:4px;background:#f9f9f9;font-weight:normal;margin-top:5px}
+.receipt-table-container{flex:1;overflow-y:auto;max-height:300px;margin-bottom:10px;border-bottom:1px solid #eee}
+.receipt-table{width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:13px}
+.receipt-table th{text-align:left;border-bottom:1px solid #ccc;padding-bottom:4px}
+.receipt-table th:nth-child(2){text-align:center}
+.receipt-table th:nth-child(3){text-align:right}
+.receipt-table td{padding:4px 0}
+.receipt-table td:nth-child(2){text-align:center}
+.receipt-table td:nth-child(3){text-align:right}
+.receipt-total{display:flex;justify-content:space-between;font-size:16px;font-weight:bold;font-family:Arial,sans-serif;margin-bottom:10px}
+.receipt-footer{text-align:center;font-size:13px;font-weight:bold;margin-bottom:15px;letter-spacing:1px;font-family:Arial,sans-serif}
+.receipt-buttons{display:flex;gap:10px}
+.rcpt-btn{flex:1;padding:12px 0;border:none;border-radius:4px;font-weight:bold;color:#fff;cursor:pointer;font-family:Arial,sans-serif;font-size:14px}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:#ccc;border-radius:4px}
+.admin-panel-screen{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#1e1e2f;z-index:99999;overflow-y:auto;color:#fff;font-size:14px}
+.admin-header{background:#151522;padding:15px;text-align:center;font-size:20px;font-weight:bold;color:#C5A059;border-bottom:2px solid #333}
+.admin-nav{display:flex;background:#2a2a40;overflow-x:auto}
+.admin-nav button{flex:1;padding:12px;background:none;border:none;color:#aaa;font-weight:bold;font-size:13px;cursor:pointer;white-space:nowrap}
+.admin-nav button.active{color:#fff;border-bottom:3px solid #C5A059;background:#1e1e2f}
+.admin-container{padding:15px;display:none}
+.admin-container.active{display:block}
+.admin-card{background:#2a2a40;border-radius:8px;padding:15px;margin-bottom:15px;box-shadow:0 4px 6px rgba(0,0,0,0.3)}
+.admin-panel-screen input,.admin-panel-screen select{width:100%;padding:10px;margin-bottom:10px;border:1px solid #444;border-radius:5px;background:#1e1e2f;color:#fff;font-size:14px}
+.admin-btn{width:100%;padding:12px;border:none;border-radius:5px;font-weight:bold;cursor:pointer;font-size:14px}
+.admin-btn-green{background:#4caf50;color:#fff}.admin-btn-red{background:#f44336;color:#fff}.admin-btn-blue{background:#1976d2;color:#fff}
+.admin-user-card{border-bottom:1px solid #444;padding:10px 0}
+.admin-user-card:last-child{border:none}
+.admin-flex{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.admin-text-small{font-size:11px;color:#aaa}
+.admin-role{padding:2px 6px;border-radius:3px;font-size:10px;font-weight:bold}
+.admin-role-user{background:#555}.admin-role-retailer{background:#ff9800;color:#000}
+.snap-res-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #e0e0e0; z-index: 9999; overflow-y: auto; display: none; padding-bottom: 20px; }
+.snap-header { background: #2e7d32; color: #fff; padding: 15px; display: flex; justify-content: space-between; align-items: center; font-size: 18px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+.snap-header.blue { background: #1976d2; }
+.snap-header .close-x { background: none; border: none; color: #fff; font-size: 26px; cursor: pointer; font-weight: normal; }
+.snap-filter-bar { background: #fff; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ccc; }
+.snap-date-input { border: none; font-size: 15px; font-weight: bold; color: #333; background: transparent; outline: none; }
+.snap-today-btn { background: #4caf50; color: #fff; border: none; padding: 6px 15px; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; }
+.snap-seq-bar { background: #e8e8e8; padding: 8px 15px; font-size: 12px; color: #555; font-weight: bold; display: flex; justify-content: flex-end; align-items: center; gap: 5px; }
+.snap-table-wrapper { width: 100%; overflow-x: auto; background: #fff; }
+.snap-table { width: 100%; border-collapse: collapse; text-align: center; font-size: 15px; }
+.snap-table th { padding: 12px 5px; color: #fff; font-size: 15px; font-weight: bold; }
+.th-time { background: #333; width: 40%; }
+.th-A { background: #00BCD4; }
+.th-B { background: #4CAF50; }
+.th-C { background: #9C27B0; }
+.snap-table td { padding: 12px 5px; border-bottom: 1px solid #eee; font-weight: bold; font-size: 17px; }
+.td-time { color: #333; display: flex; justify-content: space-between; align-items: center; padding-left: 10px !important; padding-right: 10px !important; }
+.snap-share-btn { background: #4CAF50; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+.td-A { color: #00BCD4; } .td-B { color: #4CAF50; } .td-C { color: #9C27B0; }
+.snap-close-btn-wrapper { text-align: right; padding: 15px; background: #e0e0e0; }
+.snap-close-btn { background: #673ab7; color: #fff; border: none; padding: 8px 25px; border-radius: 4px; font-size: 14px; font-weight: bold; cursor: pointer; }
+.snap-2d-block-header { background: #fdfdfd; padding: 10px; font-weight: bold; color: #333; font-size: 14px; border-bottom: 1px solid #ddd; margin-top: 10px;}
+.snap-2d-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; padding: 10px; background: #fff; }
+.snap-2d-cell { border: 1px solid #eee; padding: 8px 0; text-align: center; border-radius: 4px; background: #fafafa; }
+.snap-2d-cell .p { font-size: 13px; color: #333; font-weight: bold; }
+.snap-2d-cell .s { font-size: 15px; color: #d32f2f; font-weight: bold; margin-top: 2px; }
+.adv-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10000; justify-content: center; align-items: center; padding: 15px; }
+.adv-content { background: #f0f0f0; width: 100%; max-width: 400px; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; max-height: 90vh; border: 2px solid #000; }
+.adv-header { background: #1565c0; color: #fff; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; font-size: 16px; font-weight: bold; text-transform: uppercase; }
+.adv-header button { background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; }
+.adv-body { background: #fff; padding: 15px; }
+.adv-top-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; font-size: 13px; font-weight: bold; }
+.adv-top-row input { width: 60px; padding: 6px; text-align: center; border: 1px solid #999; border-radius: 4px; font-size: 14px; }
+.adv-top-row .clear-btn { background: none; border: none; color: #333; font-weight: bold; cursor: pointer; margin-left: auto; font-size: 12px; }
+.adv-avail { font-size: 11px; color: #777; text-align: right; margin-bottom: 15px; }
+.adv-grid-wrap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; overflow-y: auto; max-height: 50vh; padding-right: 5px; }
+.adv-time-btn { border: 1px solid #999; background: #fff; padding: 10px 0; border-radius: 4px; font-size: 13px; color: #333; font-weight: bold; cursor: pointer; }
+.adv-time-btn.selected { background: #4caf50; color: #fff; border-color: #2e7d32; }
+.adv-footer { display: flex; gap: 10px; padding: 15px; background: #f0f0f0; border-top: 1px solid #ccc; }
+.adv-footer button { flex: 1; padding: 12px; border: none; border-radius: 4px; font-weight: bold; font-size: 14px; color: #fff; cursor: pointer; }
+.btn-apply { background: #2e7d32; }
+.btn-cancel { background: #d32f2f; }
+
+</style>
+</head>
+<body>
+
+<div id="page-public-results" style="position:fixed;top:0;left:0;width:100%;height:100%;background:#f0f0f0;z-index:10000;overflow-y:auto;display:none;padding-bottom:20px;">
+    <div class="pub-res-header" style="position:sticky;top:0;background:#fff;padding:15px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 5px rgba(0,0,0,0.1);z-index:10;">
+        <span id="public-res-title" style="font-size:18px;font-weight:bold;color:#333;">Results</span>
+        <button onclick="closePublicResults()" style="padding:8px 15px;border:none;border-radius:5px;background:#d32f2f;color:#fff;font-weight:bold;cursor:pointer;font-size:14px;">Back to Login</button>
+    </div>
+    <div class="pub-res-content" id="public-res-content" style="padding:15px;max-width:600px;margin:0 auto;"></div>
+</div>
+
+<div id="auth-screen">
+    <div class="auth-container">
+        <div class="public-header">
+            <div class="goldwin-logo"><div class="logo-icon">G</div><div class="logo-text">GOLDWIN</div></div>
+            <div class="catchy-text">Kuch Khelo Aur Jeeto</div>
+            <div class="disclaimer-text">* It's only for amusement. Free points are provided for play.</div>
+            <div class="public-res-btns">
+                <button class="btn-2d" onclick="openPublicResults('2d')">2D GAME</button>
+                <button class="btn-3d" onclick="openPublicResults('3d')">3D GAME</button>
+            </div>
+            <div style="font-size:10px;color:#777;margin-top:5px;">(Yahan click karke bina login kiye result dekhein)</div>
+            <div class="divider"></div>
+        </div>
+        <div class="auth-box">
+            <h2 id="auth-title">Create Account</h2>
+            <input type="email" id="auth-email" class="auth-input" placeholder="Email Address">
+            <input type="password" id="auth-password" class="auth-input" placeholder="Password (min 6 chars)">
+            <input type="text" id="auth-referral" class="auth-input" placeholder="Referral Code (Optional)">
+            <button id="auth-btn" class="auth-btn">Sign Up</button>
+            <p class="auth-toggle" onclick="toggleAuthMode()"><span id="auth-toggle-text">Already have an account? Login</span></p>
+            <p id="auth-error" class="auth-error"></p>
+            <div style="margin-top: 15px; border-top: 1px dashed #ccc; padding-top: 10px;">
+                <button onclick="window.location.hash='#admin'" style="background:none; border:none; color:#888; font-size:12px; cursor:pointer; text-decoration:underline;">Admin Login</button>
+            </div>
+        </div>
+        <div class="contact-us">
+            <p>Contact Us</p>
+            <div class="social-links">
+                <a href="https://wa.me/919999999999" target="_blank" class="social-icon whatsapp"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></a>
+                <a href="https://facebook.com" target="_blank" class="social-icon facebook"><svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.469h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.469h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></a>
+                <a href="https://instagram.com" target="_blank" class="social-icon instagram"><svg viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="top-bar" id="main-top-bar" style="display:none;">
+    <div id="real-time-clock">Loading time...</div>
+    <div style="display:flex;align-items:center;gap:5px;">
+        <button id="retailer-btn" style="display:none; background:#ff9800; color:#fff; border:none; border-radius:3px; padding:3px 8px; font-size:10px; cursor:pointer; font-weight:bold;" onclick="openRetailerPanel()">Retailer Panel</button>
+        <span>Balance: <span class="points-bal" id="balance">₹0.00</span></span>
+        <button onclick="showPage('account')" style="background:#1976d2;color:#fff;border:none;border-radius:3px;padding:3px 8px;font-size:10px;cursor:pointer;font-weight:bold;">Account</button>
+        <button onclick="logoutUser()" style="background:red;color:#fff;border:none;border-radius:3px;padding:3px 8px;font-size:10px;cursor:pointer;">Logout</button>
+    </div>
+</div>
+
+<div id="main-app" style="display:none;">
+<div class="timer-bar"><span class="timer-label" id="result-text">Next Draw In:</span> <span class="timer-val" id="timer-display">Loading...</span> <span id="last-draw-display" style="margin-left: 10px; font-size: 13px; color: #d32f2f; font-weight: bold; border-left: 2px solid #000; padding-left: 8px; display: inline-block;">Last Draw: --</span></div>
+<div class="adv-banner" id="adv-banner" style="display:none;background:#ffeb3b;color:#000;text-align:center;padding:5px;font-weight:bold;border-bottom:2px solid #fbc02d">Advance Betting: <span id="selected-adv-time-text"></span> <button onclick="clearAdvanceTimes()" style="background:red;color:#fff;border:none;padding:2px 5px;border-radius:3px;font-size:10px;margin-left:5px">Clear All</button></div>
+<div id="header-3d">
+<div class="panels"><div class="panel panel-A">A</div><div class="panel panel-B">B</div><div class="panel panel-C">C</div></div>
+<div class="panel-nums"><div id="res-A">- - -</div><div id="res-B">- - -</div><div id="res-C">- - -</div></div>
+<div class="btn-row"><div onclick="showPage('cancel')">Cancel</div><div onclick="showPage('reprint')">Reprint</div><div onclick="showPage('result')">Result</div><div onclick="showPage('advance')">Advance</div></div>
+</div>
+<div id="section-3d">
+<div class="checkbox-row" style="background:#e0f7fa"><label><input type="checkbox" id="panel-ALL" onclick="handlePanelAll()"> ALL</label><label class="lbl-A"><input type="checkbox" class="panel-cb" value="A" checked onclick="handlePanelIndividual()"> A</label><label class="lbl-B"><input type="checkbox" class="panel-cb" value="B" onclick="handlePanelIndividual()"> B</label><label class="lbl-C"><input type="checkbox" class="panel-cb" value="C" onclick="handlePanelIndividual()"> C</label></div>
+<div class="selector-row"><button class="active">All</button><button>0</button><button>1</button><button>2</button><button>3</button><button>4</button><button>5</button><button>6</button><button>7</button><button>8</button><button>9</button></div>
+<div class="checkbox-row"><label><input type="checkbox" id="type-ALL" onclick="handleTypeAll()"> All</label><label><input type="checkbox" class="type-cb" value="Box" checked onclick="handleTypeIndividual()"> Box</label><label><input type="checkbox" class="type-cb" value="Straight" onclick="handleTypeIndividual()"> Straight</label><label><input type="checkbox" class="type-cb" value="SP" onclick="handleTypeIndividual()"> SP</label><label><input type="checkbox" class="type-cb" value="FP" onclick="handleTypeIndividual()"> FP</label><label><input type="checkbox" class="type-cb" value="BP" onclick="handleTypeIndividual()"> BP</label><label><input type="checkbox" class="type-cb" value="Any Pair" onclick="handleTypeIndividual()"> Any Pair</label></div>
+<div class="add-num-sec">
+<input type="text" class="add-num-box" placeholder="ADD NUM." id="input-num" maxlength="3" oninput="autoAddNumber()">
+<div class="range-sec"><span>Range:</span><input type="text" placeholder="NUM"><span>To</span><input type="text" placeholder="NUM"><span>L-Pick:</span><button class="lucky-btn" onclick="generateLuckyNumber()">Lucky Pick</button></div>
+<div class="dropdown-sec"><select id="dropdown-type"><option value="Box">Box</option><option value="Straight">Straight</option><option value="SP">SP</option><option value="FP">FP</option><option value="BP">BP</option><option value="Any Pair">Any Pair</option></select><input type="text" value="1" style="width:40px"></div>
+<div class="points-sec"><span>Point:</span><label><input type="radio" name="pts" value="10" checked> 10</label><label><input type="radio" name="pts" value="20"> 20</label><label><input type="radio" name="pts" value="30"> 30</label><label><input type="radio" name="pts" value="40"> 40</label><label><input type="radio" name="pts" value="50"> 50</label></div>
+<button class="free-buy-btn" onclick="buyTicket()">FREE BUY</button>
+</div>
+<div class="cart-preview-sec"><div style="font-weight:bold;color:#777;font-size:12px;margin-bottom:10px;text-align:center;">Yahan aapke add kiye hue numbers dikhenge</div><div id="cart-preview"></div></div>
+</div>
+<div id="section-2d" class="hidden">
+<div class="nav-row"><div class="cancel" onclick="showPage('cancel')">Cancel</div><div class="hist" onclick="showPage('reprint')">Reprint</div><div class="res" onclick="showPage('result')">Result</div><div class="adv" onclick="showPage('advance')">Advance</div></div>
+<div class="dark-blue-bar" id="range-tabs"><button id="tab-btn-ALL" onclick="activateAll2DGroups(this)">ALL (30)</button><button class="active" id="tab-btn-10" onclick="activate2DGroup('10',this)">10-19</button><button id="tab-btn-30" onclick="activate2DGroup('30',this)">30-39</button><button id="tab-btn-50" onclick="activate2DGroup('50',this)">50-59</button></div>
+<div class="grey-bar-1"><label style="display:flex;align-items:center;gap:5px"><input type="checkbox" id="chk-all-prefix" onclick="toggleAllPrefixes(this)"> All</label><div id="prefix-buttons" style="display:flex;flex-wrap:wrap;gap:6px"></div><button onclick="clear2DSelections()" style="background:#f44336;color:#fff;border:none;padding:6px 10px;border-radius:3px;font-weight:bold;cursor:pointer;font-size:12px;margin-left:auto">Clear</button></div>
+<div class="grey-bar-2">
+<div class="filter-group"><span class="filter-label">FRONT</span><label><input type="checkbox" id="filter-even" onchange="apply2DFilter()"> Even</label><label><input type="checkbox" id="filter-odd" onchange="apply2DFilter()"> Odd</label></div>
+<div class="filter-divider"></div>
+<div class="filter-group"><span class="filter-label">BACK</span><label><input type="checkbox" id="filter-back-even" onchange="apply2DFilter()"> Even</label><label><input type="checkbox" id="filter-back-odd" onchange="apply2DFilter()"> Odd</label></div>
+<div class="filter-divider"></div>
+<button id="fp-mode-btn" onclick="toggleFPMode()" style="background:#fff;border:2px solid #9c27b0;color:#9c27b0;padding:6px 12px;border-radius:4px;font-weight:bold;cursor:pointer;font-size:12px">FP MODE: OFF</button>
+</div>
+<div style="background:#e3f2fd;padding:6px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #90caf9"><span class="active-prefix-label" id="active-prefix-label">Viewing: 10</span><span style="font-size:11px;color:#555" id="grid-range-label">(Grid 1000-1099)</span><span id="filter-hint" style="font-size:11px;color:#d32f2f;font-weight:bold;margin-left:auto"></span></div>
+<div class="grid-2d-wrapper"><div class="grid-2d" id="grid-2d-container"></div></div>
+<div class="add-num-sec" style="background:#e0e0e0;margin-top:5px">
+<div class="points-sec" style="margin-bottom:10px;justify-content:center;gap:10px"><span style="font-weight:bold;font-size:14px;color:#333">Points (1x = 2 pts):</span><input type="number" id="pts-multiplier-2d" value="1" min="1" max="50" style="width:60px;padding:6px;text-align:center;font-weight:bold;border:2px solid #1976d2;border-radius:5px;font-size:16px"><span style="font-size:11px;color:#555">(Max 50x = 100 pts)</span></div>
+<button class="free-buy-btn" style="background:#1976d2" onclick="buy2DTicket()">FREE BUY</button>
+</div>
+</div>
+<div class="page-overlay" id="page-cancel"><div class="page-header"><span id="cancel-page-title">Cancel Tickets</span><button class="btn-sm btn-refresh" onclick="hidePage()">Back</button></div><div id="cancel-list"></div></div>
+<div class="page-overlay" id="page-reprint"><div class="page-header"><span id="reprint-page-title">Aaj ke Bought Tickets</span><button class="btn-sm btn-refresh" onclick="hidePage()">Back</button></div><div id="reprint-list"></div></div>
+<div class="page-overlay" id="page-result"><div id="page-3d-result-content"></div></div>
+<div class="page-overlay" id="page-2d-result"><div id="page-2d-result-content"></div></div>
+<div class="page-overlay" id="page-account">
+    <div class="page-header"><span>My Account Stats</span><button class="btn-sm btn-refresh" onclick="hidePage()">Back</button></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px;">
+        <div class="stat-box" style="flex:1;min-width:100px;"><h4>Total Played</h4><div class="val" style="color:#d32f2f" id="acc-total-bets">₹0</div></div>
+        <div class="stat-box" style="flex:1;min-width:100px;"><h4>Total Won</h4><div class="val" style="color:#4caf50" id="acc-total-won">₹0</div></div>
+    </div>
+    <div class="stat-box" id="acc-net-box"><h4>Net Profit / Loss</h4><div class="val" id="acc-net-result">₹0</div></div>
+    <div style="background:#fff; padding:15px; border-radius:5px; margin-top:15px; box-shadow:0 2px 5px rgba(0,0,0,.1)">
+        <h4 style="margin-bottom:10px; color:#333;">Change Password</h4>
+        <input type="password" id="new-user-pass" placeholder="New Password (min 6 chars)" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc; border-radius:5px;">
+        <button onclick="changeUserPassword()" style="background:#1976d2; color:#fff; padding:10px; border:none; border-radius:5px; font-weight:bold; width:100%;">Update Password</button>
+    </div>
+</div>
+<div class="custom-modal" id="custom-modal">
+    <div class="custom-modal-content"><div class="custom-modal-title" id="custom-modal-title">Confirm</div><div class="custom-modal-body" id="custom-modal-body">Are you sure?</div><div class="custom-modal-buttons"><button class="btn-yes" id="custom-yes-btn" onclick="customConfirmYes()">Yes</button><button class="btn-no" id="custom-no-btn" onclick="customConfirmNo()">No</button></div></div>
+</div>
+<div class="result-modal" id="result-popup-3d">
+    <div class="result-modal-content">
+        <div id="popup-3d-title" style="font-size:24px;font-weight:bold;color:#d32f2f;margin-bottom:5px;text-shadow:1px 1px 2px #ffeb3b;">🎉 3D RESULT 🎉</div>
+        <div class="result-boxes"><div class="result-box"><div class="result-box-header bg-A">A</div><div class="result-box-val" id="popup-res-A">---</div></div><div class="result-box"><div class="result-box-header bg-B">B</div><div class="result-box-val" id="popup-res-B">---</div></div><div class="result-box"><div class="result-box-header bg-C">C</div><div class="result-box-val" id="popup-res-C">---</div></div></div>
+        <button class="btn-yes" style="width:100%;padding:12px;font-size:18px;border-radius:10px;box-shadow:0 4px 6px rgba(0,0,0,.2)" onclick="closeResultPopup3D()">CONTINUE</button>
+    </div>
+</div>
+<div class="result-modal" id="result-popup-2d">
+    <div class="result-modal-content">
+        <div style="font-size:24px;font-weight:bold;color:#d32f2f;margin-bottom:5px;text-shadow:1px 1px 2px #ffeb3b;">🎉 2D RESULT 🎉</div>
+        <div class="popup-2d-content" id="popup-2d-content" style="font-size:14px;font-weight:bold;text-align:left;background:#fff9c4;padding:10px;border-radius:5px;margin:10px 0;line-height:1.5">---</div>
+        <button class="btn-yes" style="width:100%;padding:12px;font-size:18px;border-radius:10px;box-shadow:0 4px 6px rgba(0,0,0,.2)" onclick="closeResultPopup2D()">CONTINUE</button>
+    </div>
+</div>
+<div class="receipt-modal" id="receipt-modal">
+<div class="receipt-content" id="receipt-content">
+    <div class="receipt-header"><div class="receipt-logo-container"><div class="receipt-logo-icon">G</div><div class="receipt-logo-ornament"><span></span> GOLD <span></span></div><div class="receipt-logo-title">WIN</div></div><div class="receipt-subtitle">Official Receipt</div></div>
+    <div class="receipt-divider"></div>
+    <div class="receipt-info"><div><span>ID:</span> <span id="rcpt-id"></span></div><div><span>Date:</span> <span id="rcpt-date"></span></div><div><span>Groups:</span> <span id="rcpt-group"></span></div></div>
+    <div class="receipt-draw-times"><div>Draw Times:</div><div id="rcpt-draw-times"></div></div>
+    <div class="receipt-table-container"><table class="receipt-table"><thead><tr><th>No.</th><th>Type</th><th>Pts</th></tr></thead><tbody id="rcpt-tbody"></tbody></table></div>
+    <div class="receipt-divider"></div>
+    <div class="receipt-total"><span>TOTAL POINTS:</span> <span id="rcpt-total-val"></span></div>
+    <div class="receipt-footer">*** Thank You! Good Luck ***</div>
+    <div class="receipt-buttons"><button class="rcpt-btn" onclick="shareTicketText()" style="background:#25D366;">SHARE</button><button class="rcpt-btn" onclick="closeReceipt()" style="background:#d32f2f;">CLOSE</button></div>
+</div>
+</div>
+<div id="multiplier-modal"><div class="mult-sheet-header"><div id="mult-title">Select Qty</div><button onclick="closeMultiplierModal()">CLOSE</button></div><div class="mult-grid" id="mult-grid-options"></div></div>
+<div class="game-tabs"><button id="tab-btn-3d" class="game-tab-btn active" onclick="switchTab('3d')">3D Game</button><button id="tab-btn-2d" class="game-tab-btn inactive" onclick="switchTab('2d')">2D Game</button></div>
+<div class="bottom-bar" id="bottom-bar"><div class="summary-total">Total: <span id="grand-total">0</span> points</div><div class="bottom-actions"><button class="action-btn btn-del" onclick="clearCart()">Clear All</button><button class="action-btn btn-refresh" onclick="refreshPage()">Refresh</button></div></div>
+</div>
+
+<div class="page-overlay" id="page-retailer">
+    <div class="page-header"><span>Retailer Dashboard</span><button class="btn-sm btn-refresh" onclick="hidePage()">Back</button></div>
+    <div class="stat-box" style="background:#e3f2fd; border-color:#90caf9;">
+        <h4>Retailer Wallet Balance</h4>
+        <div class="val" style="color:#1565c0" id="retailer-wallet-bal">₹0</div>
+        <small style="color:#555;">(Yeh points Admin deta hai distribute karne ke liye)</small>
+    </div>
+    <div style="background:#fff; padding:15px; border-radius:5px; margin-bottom:15px; box-shadow:0 2px 5px rgba(0,0,0,.1)">
+        <h4 style="margin-bottom:10px; color:#333;">Add New User</h4>
+        <input type="email" id="ret-new-user-email" placeholder="User Email" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc; border-radius:5px;">
+        <input type="password" id="ret-new-user-pass" placeholder="Password (min 6 chars)" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ccc; border-radius:5px;">
+        <button onclick="retailerAddUser()" style="background:#4caf50; color:#fff; padding:10px; border:none; border-radius:5px; font-weight:bold; width:100%;">Create User</button>
+    </div>
+    <h3 style="margin:15px 0 10px; font-size:14px; color:#333;">My Users</h3>
+    <div id="retailer-users-list"></div>
+</div>
+
+<div class="admin-panel-screen" id="admin-panel-screen">
+    <div id="admin-login" style="padding:50px 20px;text-align:center;">
+        <h2 style="color:#C5A059;margin-bottom:20px;">Admin Login</h2>
+        <input type="email" id="admin-email" placeholder="Admin Email">
+        <input type="password" id="admin-password" placeholder="Password">
+        <button class="admin-btn admin-btn-green" onclick="adminLogin()">Login</button>
+        <p id="admin-login-error" style="color:red;margin-top:10px;"></p>
+        <button class="admin-btn" onclick="window.location.hash=''" style="background:#555;color:#fff;margin-top:10px;">Back to Game</button>
+    </div>
+    <div id="admin-dashboard" style="display:none;">
+        <div class="admin-header">Goldwin Admin <button onclick="window.location.hash=''" style="float:right;background:red;color:#fff;border:none;padding:5px 10px;border-radius:5px;font-size:12px;">Exit</button></div>
+        <div class="admin-nav">
+            <button class="active" onclick="showAdminTab('users')">Users</button>
+            <button onclick="showAdminTab('results')">Manual Result</button>
+            <button onclick="showAdminTab('activity')">User Activity</button>
+            <button onclick="showAdminTab('retailers')">Retailers</button>
+        </div>
+        <div class="admin-container active" id="tab-users">
+            <div class="admin-card">
+                <div class="admin-flex">
+                    <h3 style="margin-bottom:10px;">All Users</h3>
+                    <button onclick="adminAddUser()" style="background:#4caf50;color:#fff;border:none;padding:6px 10px;border-radius:4px;font-weight:bold;font-size:12px;cursor:pointer;">+ Add User</button>
+                </div>
+                <div id="admin-users-list">Loading...</div>
+            </div>
+        </div>
+        <div class="admin-container" id="tab-results">
+            <div class="admin-card">
+                <div class="admin-flex" style="margin-bottom: 15px;">
+                    <h3>Auto Result Setting</h3>
+                    <button id="auto-result-toggle-btn" class="admin-btn admin-btn-green" style="width:auto; padding: 8px 15px;" onclick="toggleAutoResult()">AUTO RESULT: ON</button>
+                </div>
+                <p class="admin-text-small" style="margin-bottom:15px;">Agar aap auto result OFF karenge, toh system khud se result nahi banayega. Aap niche se manual result daal sakte hain.</p>
+            </div>
+            <div class="admin-card">
+                <h3 style="margin-bottom:10px;">Risky Numbers (Next Draw)</h3>
+                <div id="admin-risky-list" style="background:#1e1e2f; padding:10px; border-radius:5px; max-height:200px; overflow-y:auto;">
+                    <div style="text-align:center;">Loading...</div>
+                </div>
+            </div>
+            <div class="admin-card">
+                <h3 style="margin-bottom:10px;">Add/Edit Manual Result</h3>
+                <div style="background:#1e1e2f; padding:12px; border-radius:5px; text-align:center; font-weight:bold; font-size:18px; color:#C5A059; margin-bottom:15px; border:1px solid #C5A059;">
+                    Next Draw In: <span id="admin-timer">--:--:--</span>
+                </div>
+                <select id="admin-res-time" style="font-weight:bold; color:#fff; background:#2a2a40; border:1px solid #C5A059; margin-bottom:15px;">
+                    <option value="">Select Draw Time...</option>
+                </select>
+                <div style="display:flex;gap:10px;"><input type="text" id="admin-res-A" placeholder="A (123)"><input type="text" id="admin-res-B" placeholder="B (456)"><input type="text" id="admin-res-C" placeholder="C (789)"></div>
+                <p class="admin-text-small" style="margin-bottom:5px;">2D Numbers (10 to 59, optional):</p>
+                <div id="admin-2d-inputs" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:10px;"></div>
+                <button class="admin-btn admin-btn-blue" onclick="publishManualResult()">Publish Result</button>
+                <button class="admin-btn admin-btn-red" style="margin-top:10px; background:#ff9800;" onclick="forceGenerateMissingResults()">⚡ Force Generate Missing Results</button>
+                <p id="admin-res-status" style="color:#4caf50;text-align:center;margin-top:10px;"></p>
+            </div>
+        </div>
+        <div class="admin-container" id="tab-activity">
+            <div class="admin-card">
+                <h3 style="margin-bottom:10px;">Recent User Bets</h3>
+                <div id="admin-activity-list">Loading...</div>
+            </div>
+        </div>
+        <div class="admin-container" id="tab-retailers">
+            <div class="admin-card">
+                <h3 style="margin-bottom:10px;">Admin Security</h3>
+                <input type="password" id="new-admin-pass" placeholder="New Admin Password">
+                <button class="admin-btn admin-btn-red" style="width:auto; padding:8px 15px; margin-bottom:15px;" onclick="changeAdminPassword()">Update Password</button>
+            </div>
+            <div class="admin-card">
+                <h3 style="margin-bottom:10px;">Retailer Commission Tracker</h3>
+                <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <input type="date" id="comm-from" style="padding:10px; border-radius:5px; border:none; background:#1e1e2f; color:#fff;">
+                    <input type="date" id="comm-to" style="padding:10px; border-radius:5px; border:none; background:#1e1e2f; color:#fff;">
+                </div>
+                <button class="admin-btn admin-btn-blue" onclick="loadAdminRetailers()">Calculate Sales & Commission</button>
+                <div id="admin-retailers-list" style="margin-top:15px;">Select dates to load data...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="adv-modal" id="advanceModal">
+    <div class="adv-content">
+        <div class="adv-header">
+            <span>ADVANCE DRAW SELECTION</span>
+            <button onclick="closeAdvanceModal()">✕</button>
+        </div>
+        <div class="adv-body">
+            <div class="adv-top-row">
+                <span>Select No. of Draws:</span>
+                <input type="number" id="draw-count-input" min="1" max="61" placeholder="Qty" oninput="promptAutoSelect()">
+                <button class="clear-btn" onclick="clearAdvanceTimes()">Clear All</button>
+            </div>
+            <div class="adv-avail">Available Today: 61</div>
+            <div class="adv-grid-wrap" id="adv-time-slots"></div>
+        </div>
+        <div class="adv-footer">
+            <button class="btn-apply" id="adv-apply-btn" onclick="applyAdvanceSelection()">APPLY (0)</button>
+            <button class="btn-cancel" onclick="closeAdvanceModal()">CANCEL</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const firebaseConfig={apiKey:"AIzaSyDa78mzNYIRoSvE87DPjQoYfilXpaVtq_s",authDomain:"goldwin-game.firebaseapp.com",projectId:"goldwin-game",storageBucket:"goldwin-game.firebasestorage.app",messagingSenderId:"701795459428",appId:"1:701795459428:web:f3a0463462ef6ea8df5a71",measurementId:"G-K2320ZN1QX"};
+firebase.initializeApp(firebaseConfig);
+const auth=firebase.auth();const db=firebase.firestore();
+
+let currentUser=null,walletBalance=0,currentTab='3d',cartItems=[],boughtTickets=[],resultHistory=[];
+let currentResult={A:"",B:"",C:"",D:null},selectedAdvanceTimes=[];
+let active2DGroup='10',activePrefix2D='10',selectedPrefixes2D={'10':[],'30':[],'50':[]},suffixSelections2D={};
+let fpModeActive=false,currentReceiptData=null,confirmCallback=null;
+let lastResultTime="";const checkedResultSlots=new Set();let lastResultCheckTime=0;
+let resultFilterDate="";
+let isAutoResultOn = true;
+let adminUsersCache = {};
+
+function getLocalDateStr(d){d=d||new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function getGroupOfPrefix(p){const n=parseInt(p);if(n>=10&&n<=19)return'10';if(n>=30&&n<=39)return'30';if(n>=50&&n<=59)return'50';return'10';}
+function getFPFamily(n){if(!n||n.length!==2)return null;const a=parseInt(n[0]),b=parseInt(n[1]),mir=d=>(d+5)%10,ma=mir(a),mb=mir(b);return new Set([`${a}${b}`,`${a}${mb}`,`${ma}${b}`,`${ma}${mb}`,`${b}${a}`,`${b}${ma}`,`${mb}${a}`,`${mb}${ma}`]);}
+
+function normalizeTimeString(t) {
+    if(!t) return "";
+    let clean = String(t).toUpperCase().replace(/\s+/g, ' ').trim();
+    let match = clean.match(/(\d{1,2})\s*:\s*(\d{2})(?::\d{2})?\s*(AM|PM)/);
+    if(match) {
+        let h = parseInt(match[1], 10);
+        let m = parseInt(match[2], 10);
+        let ap = match[3];
+        if(h < 10) h = '0' + h;
+        if(m < 10) m = '0' + m;
+        return `${h}:${m} ${ap}`;
+    }
+    return clean;
+}
+
+function timeToMinutes(timeStr){
+    if(!timeStr) return 0;
+    try {
+        const cleanStr = normalizeTimeString(timeStr);
+        const isPM = cleanStr.includes('PM');
+        const timePart = cleanStr.replace(/[AP]M/g, '').trim();
+        const parts = timePart.split(':');
+        let hours = parseInt(parts[0]);
+        let minutes = parseInt(parts[1]);
+        if (isPM && hours !== 12) hours += 12;
+        if (!isPM && hours === 12) hours = 0;
+        return (hours * 60) + minutes;
+    } catch (e) { return 0; }
+}
+
+function isValidDrawTime(rTime) {
+    if(!rTime) return false;
+    const mins = timeToMinutes(rTime);
+    return mins >= 480 && mins <= 1439; 
+}
+
+function isFutureResult(rDate, rTime) {
+    const today = getLocalDateStr();
+    if(rDate > today) return true;
+    if(rDate === today) {
+        const now = new Date();
+        const rMins = timeToMinutes(rTime);
+        const nowMins = now.getHours() * 60 + now.getMinutes();
+        if(rMins > nowMins) return true;
+    }
+    return false;
+}
+
+// ⭐ NEW: getNextDrawDate (missing function)
+function getNextDrawDate(){
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0);
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 0, 0);
+    if (now < start) return start;
+    if (now >= end) return new Date(now.getFullYear(), now.getMonth(), now.getDate()+1, 8, 0, 0);
+    let rem = now.getMinutes() % 15;
+    let next = new Date(now.getTime() + (15 - rem) * 60000);
+    next.setSeconds(0, 0);
+    if (next > end) return new Date(now.getFullYear(), now.getMonth(), now.getDate()+1, 8, 0, 0);
+    return next;
+}
+
+function checkAdminRoute(){
+    if(window.location.hash==='#admin'){
+        document.getElementById('auth-screen').style.display='none';
+        document.getElementById('main-top-bar').style.display='none';
+        document.getElementById('main-app').style.display='none';
+        let adminScreen = document.getElementById('admin-panel-screen');
+        if(adminScreen) { adminScreen.style.display='block'; adminScreen.style.zIndex='999999'; }
+
+        if(auth.currentUser && auth.currentUser.email === 'lalitpandey6393@gmail.com'){
+            document.getElementById('admin-login').style.display='none';
+            document.getElementById('admin-dashboard').style.display='block';
+            loadAdminUsers(); generateAdmin2DInputs(); loadGameSettings();
+            document.getElementById('comm-from').value=getLocalDateStr();
+            document.getElementById('comm-to').value=getLocalDateStr();
+        } else {
+            document.getElementById('admin-login').style.display='block';
+            document.getElementById('admin-dashboard').style.display='none';
+        }
+    } else {
+        let adminScreen = document.getElementById('admin-panel-screen');
+        if(adminScreen) adminScreen.style.display = 'none';
+        if(currentUser){
+            document.getElementById('main-app').style.display='block';
+            document.getElementById('main-top-bar').style.display='flex';
+            document.getElementById('auth-screen').style.display='none';
+        } else {
+            document.getElementById('auth-screen').style.display='flex';
+            document.getElementById('main-app').style.display='none';
+            document.getElementById('main-top-bar').style.display='none';
+        }
+    }
+}
+window.addEventListener('hashchange',checkAdminRoute);
+document.addEventListener('DOMContentLoaded', () => { setTimeout(checkAdminRoute, 500); });
+
+async function adminLogin(){
+    const email=document.getElementById('admin-email').value;
+    const pass=document.getElementById('admin-password').value;
+    try{
+        if(auth.currentUser) { await auth.signOut(); } 
+        const cred = await auth.signInWithEmailAndPassword(email, pass);
+        if(cred.user.email === 'lalitpandey6393@gmail.com'){
+            document.getElementById('admin-login').style.display='none';
+            document.getElementById('admin-dashboard').style.display='block';
+            loadAdminUsers(); generateAdmin2DInputs(); loadGameSettings();
+            document.getElementById('comm-from').value=getLocalDateStr();
+            document.getElementById('comm-to').value=getLocalDateStr();
+        } else {
+            await auth.signOut();
+            document.getElementById('admin-login-error').innerText="Aap Admin nahi hain!";
+        }
+    }catch(e){
+        document.getElementById('admin-login-error').innerText="Galat Email ya Password!";
+    }
+}
+
+function showAdminTab(tabName){document.querySelectorAll('.admin-container').forEach(c=>c.classList.remove('active'));document.querySelectorAll('.admin-nav button').forEach(b=>b.classList.remove('active'));document.getElementById('tab-'+tabName).classList.add('active');event.target.classList.add('active');if(tabName==='users')loadAdminUsers();if(tabName==='retailers'){document.getElementById('comm-from').value=getLocalDateStr();document.getElementById('comm-to').value=getLocalDateStr();loadAdminRetailers();}if(tabName==='results'){loadGameSettings();loadRiskyNumbers();generateAdminTimeOptions();}if(tabName==='activity')loadUserActivity();}
+
+function generateAdminTimeOptions() {
+    const select = document.getElementById('admin-res-time');
+    if (select.options.length > 1) { select.value = getNextDrawTimeString(); return; }
+    let html = '<option value="">Select Draw Time...</option>';
+    for(let h=8;h<=23;h++){ for(let m=0;m<60;m+=15){ if(h===23&&m>0)break; let ap=h>=12?'PM':'AM'; let dh=h>12?h-12:(h===0?12:h); let timeStr=`${dh<10?'0'+dh:dh}:${m<10?'0'+m:m} ${ap}`; html += `<option value="${timeStr}">${timeStr}</option>`; } }
+    select.innerHTML = html; select.value = getNextDrawTimeString();
+}
+
+async function loadGameSettings(){try{const doc=await db.collection("settings").doc("game").get();if(doc.exists){isAutoResultOn=doc.data().autoResult!==false;}else{isAutoResultOn=true;}updateAutoResultBtnUI();}catch(e){console.log(e);}}
+async function toggleAutoResult(){isAutoResultOn=!isAutoResultOn;await db.collection("settings").doc("game").set({autoResult:isAutoResultOn},{merge:true});updateAutoResultBtnUI();}
+function updateAutoResultBtnUI(){const btn=document.getElementById('auto-result-toggle-btn');if(isAutoResultOn){btn.innerText="AUTO RESULT: ON";btn.className="admin-btn admin-btn-green";btn.style.width="auto";btn.style.padding="8px 15px";}else{btn.innerText="AUTO RESULT: OFF";btn.className="admin-btn admin-btn-red";btn.style.width="auto";btn.style.padding="8px 15px";}}
+
+async function loadAdminUsers(){const list=document.getElementById('admin-users-list');list.innerHTML="Loading...";try{const snapshot=await db.collection("users").get();let html='';adminUsersCache={};snapshot.forEach(doc=>{const u=doc.data();adminUsersCache[doc.id]=u.email;const role=u.role||'user';html+=`<div class="admin-user-card"><div class="admin-flex"><div><strong>${u.email}</strong><br><span class="admin-text-small">Code: ${doc.id}</span></div><div><span class="admin-role admin-role-${role}">${role.toUpperCase()}</span></div></div><div class="admin-flex" style="margin-top:5px;"><div>Bal: <strong style="color:#4caf50">₹${u.balance}</strong> | R-Wallet: <strong style="color:#ff9800">₹${u.retailerWallet||0}</strong></div><div style="display:flex;gap:5px;"><button class="admin-btn admin-btn-green" style="padding:5px;width:auto;font-size:11px;" onclick="adminChangeBalance('${doc.id}','add')">+ Pts</button><button class="admin-btn admin-btn-red" style="padding:5px;width:auto;font-size:11px;" onclick="adminChangeBalance('${doc.id}','sub')">- Pts</button>${role!=='retailer'?`<button class="admin-btn admin-btn-blue" style="padding:5px;width:auto;font-size:11px;" onclick="adminMakeRetailer('${doc.id}')">Make Retailer</button>`:''}<button class="admin-btn admin-btn-red" style="padding:5px;width:auto;font-size:11px;background:#b71c1c;" onclick="adminDeleteUser('${doc.id}')">Delete</button></div></div></div>`;});list.innerHTML=html||"No users found.";}catch(e){list.innerHTML="Error loading users";}}
+
+async function adminMakeRetailer(uid){if(confirm("Kya aap is user ko Retailer banana chahte hain?")){await db.collection("users").doc(uid).update({role:"retailer", retailerWallet: 0});alert("User is now a Retailer!");loadAdminUsers();}}
+async function adminAddUser(){const email=prompt("Enter new user's email:");if(!email)return;const pass=prompt("Enter new user's password (min 6 chars):");if(!pass)return;try{let secondaryApp;try{secondaryApp=firebase.initializeApp(firebaseConfig,"Secondary");}catch(e){secondaryApp=firebase.app("Secondary");}const userCredential=await secondaryApp.auth().createUserWithEmailAndPassword(email,pass);const uid=userCredential.user.uid;await db.collection("users").doc(uid).set({email:email,balance:0,role:"user",createdAt:firebase.firestore.FieldValue.serverTimestamp()});await secondaryApp.auth().signOut();alert("User added successfully!");loadAdminUsers();}catch(e){alert("Error adding user: "+e.message);}}
+async function adminDeleteUser(uid){if(!confirm("Are you sure you want to delete this user?"))return;try{await db.collection("users").doc(uid).delete();alert("User deleted from database.");loadAdminUsers();}catch(e){alert("Error: "+e.message);}}
+
+async function adminChangeBalance(uid,action){
+    let amt=prompt("Kitne points add/subtract karne hain?"); if(!amt||isNaN(amt))return; amt=parseInt(amt);
+    const userRef=db.collection("users").doc(uid);
+    try {
+        const doc = await userRef.get(); const data = doc.data(); const isRetailer = data.role === 'retailer';
+        if(isRetailer) {
+            const walletChoice = prompt("Ye Retailer hai. Kahan add/subtract karna hai?\n\n1 = Retailer Wallet\n2 = Game Balance\n\nEnter 1 ya 2:", "1");
+            if(walletChoice === '1') { await userRef.update({retailerWallet:firebase.firestore.FieldValue.increment(action === 'add' ? amt : -amt)}); alert(`₹${amt} ${action === 'add' ? 'added to' : 'deducted from'} Retailer Wallet!`); } 
+            else if(walletChoice === '2') { await userRef.update({balance:firebase.firestore.FieldValue.increment(action === 'add' ? amt : -amt)}); alert(`₹${amt} ${action === 'add' ? 'added to' : 'deducted from'} Game Balance!`); }
+        } else { await userRef.update({balance:firebase.firestore.FieldValue.increment(action === 'add' ? amt : -amt)}); alert(`₹${amt} ${action === 'add' ? 'added' : 'deducted'}!`); }
+        loadAdminUsers();
+    } catch(e) { alert("Error: " + e.message); }
+}
+
+function generateAdmin2DInputs(){const c=document.getElementById('admin-2d-inputs');let html='';for(let i=10;i<=59;i++){if(i>=20&&i<=29)continue;if(i>=40&&i<=49)continue;html+=`<input type="text" id="admin-res-2d-${i}" placeholder="${i}" maxlength="2" style="padding:5px;font-size:12px;text-align:center;">`;}c.innerHTML=html;}
+
+async function loadRiskyNumbers(){
+    const list=document.getElementById('admin-risky-list'); list.innerHTML="Fetching bets...";
+    try{
+        const snapshot=await db.collection("tickets").where("status", "==", "PENDING").get(); let bets = {}; 
+        snapshot.forEach(doc=>{
+            const t=doc.data(); const drawDate = t.advanceDate || 'No Date'; const drawTime = normalizeTimeString(t.advanceTime) || 'No Time'; const key = `${drawDate} | ${drawTime}`;
+            if(!bets[key]) bets[key] = {};
+            const numKey = `${t.is2D?'2D':t.panel} - ${t.number} (${t.type})`;
+            bets[key][numKey] = (bets[key][numKey] || 0) + t.totalCost;
+        });
+        let html = ''; const sortedKeys = Object.keys(bets).sort(); 
+        if(sortedKeys.length === 0) { html = "<div style='text-align:center; padding:10px;'>Koi pending bets nahi hain.</div>"; } 
+        else {
+            sortedKeys.forEach(key => {
+                html += `<div style="background:#1a1a2e; padding:8px; border-left:3px solid #C5A059; margin-bottom:5px; font-weight:bold; color:#C5A059; font-size:12px;">Draw: ${key}</div>`;
+                let sortedBets = Object.entries(bets[key]).sort((a,b)=>b[1]-a[1]);
+                html += `<table style="width:100%; border-collapse: collapse; font-size:12px; margin-bottom:15px;"><tr style="background:#333; color:#fff;"><th style="padding:5px; text-align:left;">Number</th><th style="padding:5px; text-align:right;">Total Pts</th></tr>`;
+                sortedBets.forEach(([num, pts], idx)=>{
+                    let color = idx < 3 ? '#f44336' : (idx < 10 ? '#ff9800' : '#fff');
+                    html += `<tr style="border-bottom:1px solid #444; color:${color};"><td style="padding:5px;">${num}</td><td style="padding:5px; text-align:right; font-weight:bold;">${pts}</td></tr>`;
+                });
+                html += `</table>`;
+            });
+        }
+        list.innerHTML = html;
+    }catch(e){ list.innerHTML = `<div style="color:red;">Error: ${e.message}</div>`; }
+}
+
+async function publishManualResult(){
+  const time=normalizeTimeString(document.getElementById('admin-res-time').value); if(!time) return alert("Time is required!");
+  let A=document.getElementById('admin-res-A').value.trim() || Math.floor(Math.random()*900+100).toString();
+  let B=document.getElementById('admin-res-B').value.trim() || Math.floor(Math.random()*900+100).toString();
+  let C=document.getElementById('admin-res-C').value.trim() || Math.floor(Math.random()*900+100).toString();
+  let D={};
+  for(let i=10;i<=59;i++){ if(i>=20&&i<=29)continue; if(i>=40&&i<=49)continue; let el=document.getElementById(`admin-res-2d-${i}`); let val=el?el.value.trim():''; if(!val) val=Math.floor(Math.random()*90+10).toString(); D[i.toString()]=val; }
+  const localDate=getLocalDateStr(); const docId=`${localDate}_${time.replace(/[: ]/g,'_')}`;
+  db.collection("results").doc(docId).set({ time:time, date:localDate, A:A, B:B, C:C, D:D, timestamp:firebase.firestore.FieldValue.serverTimestamp() }).then(()=>{
+      document.getElementById('admin-res-status').innerText="Result Published Successfully!"; setTimeout(()=>document.getElementById('admin-res-status').innerText="",3000); loadRiskyNumbers();
+      document.getElementById('admin-res-A').value=''; document.getElementById('admin-res-B').value=''; document.getElementById('admin-res-C').value='';
+      for(let i=10;i<=59;i++){if(i>=20&&i<=29)continue;if(i>=40&&i<=49)continue;let el=document.getElementById(`admin-res-2d-${i}`);if(el)el.value='';}
+  });
+}
+
+async function forceGenerateMissingResults() {
+    const status = document.getElementById('admin-res-status'); status.innerText = "Generating... Please wait."; status.style.color = "orange";
+    try {
+        const today = getLocalDateStr(); const now = new Date(); 
+        if (now.getHours() < 8) { status.innerText = "Aaj ke draws abhi start nahi hue hain (8:00 AM)."; status.style.color = "red"; setTimeout(()=> status.innerText="", 3000); return; }
+        let startT = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0); 
+        let endT = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), Math.floor(now.getMinutes()/15)*15, 0); 
+        let count = 0;
+        for (let slot = new Date(startT); slot.getTime() <= endT.getTime(); slot.setMinutes(slot.getMinutes() + 15)) {
+            const h = slot.getHours(), m = slot.getMinutes(); 
+            if (h > 23 || (h === 23 && m > 0)) break;
+            const ap = h >= 12 ? 'PM' : 'AM'; const dh = h > 12 ? h - 12 : (h === 0 ? 12 : h); 
+            const timeStr = normalizeTimeString(`${dh < 10 ? '0' + dh : dh}:${m < 10 ? '0' + m : m} ${ap}`); 
+            const docId = `${today}_${timeStr.replace(/[: ]/g, '_')}`;
+            const docRef = db.collection("results").doc(docId); const docSnap = await docRef.get();
+            
+            let needsGen = !docSnap.exists || !docSnap.data().D || Object.keys(docSnap.data().D).length < 30;
+            
+            if (needsGen) {
+                let A = (docSnap.exists && docSnap.data().A) ? docSnap.data().A : Math.floor(Math.random() * 900 + 100).toString();
+                let B = (docSnap.exists && docSnap.data().B) ? docSnap.data().B : Math.floor(Math.random() * 900 + 100).toString();
+                let C = (docSnap.exists && docSnap.data().C) ? docSnap.data().C : Math.floor(Math.random() * 900 + 100).toString();
+                let D = (docSnap.exists && docSnap.data().D) ? docSnap.data().D : {}; 
+                
+                ['10','30','50'].forEach(base=>{
+                    for(let i=0;i<=9;i++){
+                        let prefix = (parseInt(base)+i).toString();
+                        if(!D[prefix]) D[prefix] = Math.floor(Math.random()*90+10).toString();
+                    }
+                }); 
+                
+                await docRef.set({ time: timeStr, date: today, A: A, B: B, C: C, D: D, timestamp: firebase.firestore.FieldValue.serverTimestamp() }, {merge: true}); 
+                count++;
+            }
+        }
+        status.innerText = `Success! Generated/Updated ${count} missing results.`; status.style.color = "green"; setTimeout(()=> status.innerText="", 5000);
+    } catch (e) { status.innerText = "Error: " + e.message; status.style.color = "red"; }
+}
+
+async function loadUserActivity(){
+    const list=document.getElementById('admin-activity-list'); list.innerHTML="Loading...";
+    try{
+        if(Object.keys(adminUsersCache).length===0){
+            const usersSnapshot=await db.collection("users").get();
+            usersSnapshot.forEach(doc=>{adminUsersCache[doc.id]=doc.data().email;});
+        }
+        const startOfToday = new Date(); startOfToday.setHours(0,0,0,0);
+        const startTimestamp = firebase.firestore.Timestamp.fromDate(startOfToday);
+        const ticketsSnapshot=await db.collection("tickets").where("createdAt", ">=", startTimestamp).orderBy("createdAt","desc").get();
+        let html='';
+        ticketsSnapshot.forEach(doc=>{
+            const t=doc.data(); const email=adminUsersCache[t.userId]||t.userId.substring(0,8); const typeStr=t.is2D?'2D':`${t.panel}-${t.type}`;
+            const betTime = t.createdAt ? t.createdAt.toDate().toLocaleString('en-GB') : t.timestamp; const targetDraw = `${t.advanceDate || ''} ${normalizeTimeString(t.advanceTime) || ''}`.trim();
+            html+=`<div class="admin-user-card" style="padding: 10px; border-bottom: 1px solid #444;"><div style="display:flex; justify-content:space-between; color:#C5A059; font-size:12px; margin-bottom:5px;"><strong>${email}</strong><span>Placed: ${betTime}</span></div><div style="display:flex; justify-content:space-between; margin-top:5px;"><span>Bet: <strong>${t.number}</strong> (${typeStr})</span><span style="color:#4caf50">${t.totalCost} pts</span></div><div style="font-size:11px; color:#ff9800; margin-top:5px; font-weight:bold; background:#1e1e2f; padding:4px; border-radius:4px; display:inline-block;">Target Draw: ${targetDraw}</div></div>`;
+        });
+        list.innerHTML=html||"<div style='text-align:center; padding:15px;'>Aaj ke liye koi activity nahi hai.</div>";
+    }catch(e){ list.innerHTML="Error loading activity"; }
+}
+
+async function loadAdminRetailers() {
+    const list = document.getElementById('admin-retailers-list'); const fromDateStr = document.getElementById('comm-from').value; const toDateStr = document.getElementById('comm-to').value;
+    if (!fromDateStr || !toDateStr) return alert("Select both From and To dates.");
+    const start = new Date(fromDateStr); start.setHours(0,0,0,0); const end = new Date(toDateStr); end.setHours(23,59,59,999); list.innerHTML = "Calculating data... Please wait.";
+    try {
+        const retailersSnap = await db.collection("users").where("role", "==", "retailer").get(); const retailers = {}; retailersSnap.forEach(doc => { retailers[doc.id] = { ...doc.data(), id: doc.id, totalUsers: 0, totalSales: 0, commission: 0 }; });
+        const usersSnap = await db.collection("users").get(); const userToRetailerMap = {}; usersSnap.forEach(doc => { const u = doc.data(); if(u.referredBy && retailers[u.referredBy]) { retailers[u.referredBy].totalUsers++; userToRetailerMap[doc.id] = u.referredBy; } });
+        const ticketsSnap = await db.collection("tickets").where("createdAt", ">=", start).where("createdAt", "<=", end).get();
+        ticketsSnap.forEach(doc => { const t = doc.data(); const retId = userToRetailerMap[t.userId]; if(retId && retailers[retId]) { retailers[retId].totalSales += t.totalCost; } });
+        let html = '';
+        Object.values(retailers).forEach(r => {
+            r.commission = Math.floor(r.totalSales * 0.05);
+            html += `<div class="admin-user-card" style="background:#1e1e2f; padding:10px; border-radius:5px; margin-bottom:10px;"><div style="display:flex; justify-content:space-between; margin-bottom:5px;"><strong style="color:#C5A059">${r.email}</strong><span style="color:#ff9800; font-weight:bold;">R-Wallet: ₹${r.retailerWallet || 0}</span></div><div style="font-size:12px; color:#fff; margin-bottom:5px;">Users Created: <b>${r.totalUsers}</b></div><div style="font-size:12px; color:#fff; margin-bottom:5px;">Sales: <b>${r.totalSales} pts</b></div><div style="font-size:13px; color:#ff9800; font-weight:bold; margin-bottom:10px;">Commission (5%): ₹${r.commission}</div><div style="display:flex; gap:5px;"><input type="number" id="admin-give-pts-${r.id}" placeholder="Points to add" style="flex:1; padding:5px; border:none; border-radius:4px; background:#333; color:#fff;"><button onclick="adminGiveRetailerPoints('${r.id}')" style="background:#4caf50; color:#fff; border:none; padding:5px 10px; border-radius:4px; font-weight:bold;">Give</button></div></div>`;
+        });
+        list.innerHTML = html || "No retailers found.";
+    } catch (e) { list.innerHTML = "<div style='color:red'>Error: " + e.message + "</div>"; }
+}
+
+async function adminGiveRetailerPoints(retailerId) { const amt = parseInt(document.getElementById(`admin-give-pts-${retailerId}`).value); if (!amt || amt <= 0) return alert("Enter valid points."); try { await db.collection("users").doc(retailerId).update({ retailerWallet: firebase.firestore.FieldValue.increment(amt) }); alert(`₹${amt} added!`); loadAdminRetailers(); } catch (e) { alert("Error: " + e.message); } }
+async function changeUserPassword() { const newPass = document.getElementById('new-user-pass').value; if (!newPass || newPass.length < 6) return alert("Password must be at least 6 characters."); try { await currentUser.updatePassword(newPass); alert("Password Updated!"); document.getElementById('new-user-pass').value = ''; } catch (e) { alert("Error: " + e.message); } }
+async function changeAdminPassword() { const newPass = document.getElementById('new-admin-pass').value; if (!newPass || newPass.length < 6) return alert("Password must be at least 6 characters."); try { const email = prompt("Confirm Admin Email:", ""); const pass = prompt("Confirm Current Admin Password:", ""); if (!email || !pass) return; const cred = firebase.auth.EmailAuthProvider.credential(email, pass); await auth.currentUser.reauthenticateWithCredential(cred); await auth.currentUser.updatePassword(newPass); alert("Admin Password Updated Successfully!"); document.getElementById('new-admin-pass').value = ''; } catch (e) { alert("Error: " + e.message); } }
+
+function openRetailerPanel() { document.querySelectorAll('.page-overlay').forEach(x => x.style.display = 'none'); document.getElementById('page-retailer').style.display = 'block'; loadRetailerData(); }
+async function loadRetailerData() {
+    const balEl = document.getElementById('retailer-wallet-bal'); const listEl = document.getElementById('retailer-users-list'); listEl.innerHTML = "Loading...";
+    try {
+        const rDoc = await db.collection("users").doc(currentUser.uid).get(); balEl.innerText = "₹" + (rDoc.data().retailerWallet || 0);
+        const snapshot = await db.collection("users").where("referredBy", "==", currentUser.uid).get(); let html = '';
+        if (snapshot.empty) { html = "<div style='text-align:center; padding:20px; color:#777'>No users created yet.</div>"; } 
+        else { snapshot.forEach(doc => { const u = doc.data(); html += `<div class="reprint-card" style="flex-direction:column; align-items:flex-start; padding:10px; margin-bottom:10px;"><div style="display:flex; justify-content:space-between; width:100%; margin-bottom:5px;"><span style="font-weight:bold; color:#333;">${u.email}</span><span style="color:#4caf50; font-weight:bold;">Bal: ₹${u.balance}</span></div><div style="display:flex; gap:5px; width:100%; margin-top:5px;"><input type="number" id="give-pts-${doc.id}" placeholder="Points" style="flex:1; padding:5px; border:1px solid #ccc; border-radius:4px;"><button onclick="transferRetailerPoints('${doc.id}')" style="background:#4caf50; color:#fff; border:none; padding:5px 10px; border-radius:4px; font-weight:bold;">Send</button></div></div>`; }); }
+        listEl.innerHTML = html;
+    } catch (e) { listEl.innerHTML = "<div style='color:red'>Error loading data.</div>"; }
+}
+
+async function retailerAddUser() {
+    const email = document.getElementById('ret-new-user-email').value.trim(); const pass = document.getElementById('ret-new-user-pass').value;
+    if (!email || !pass) return alert("Email and Password required!"); if (pass.length < 6) return alert("Password must be at least 6 characters.");
+    try {
+        let secondaryApp; try { secondaryApp = firebase.initializeApp(firebaseConfig, "RetSecondary"); } catch(e) { secondaryApp = firebase.app("RetSecondary"); }
+        const userCredential = await secondaryApp.auth().createUserWithEmailAndPassword(email, pass);
+        await db.collection("users").doc(userCredential.user.uid).set({ email: email, balance: 0, role: "user", referredBy: currentUser.uid, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+        await secondaryApp.auth().signOut(); alert("User added successfully!"); document.getElementById('ret-new-user-email').value = ''; document.getElementById('ret-new-user-pass').value = ''; loadRetailerData();
+    } catch (e) { alert("Error adding user: " + e.message); }
+}
+
+async function transferRetailerPoints(userId) {
+    const amt = parseInt(document.getElementById(`give-pts-${userId}`).value); if (!amt || amt <= 0) return alert("Enter valid points.");
+    try {
+        await db.runTransaction(async (transaction) => {
+            const rRef = db.collection("users").doc(currentUser.uid); const rDoc = await transaction.get(rRef);
+            if (!rDoc.exists) throw new Error("Retailer not found!");
+            if ((rDoc.data().retailerWallet || 0) < amt) throw new Error("Insufficient Retailer Wallet!");
+            transaction.update(rRef, { retailerWallet: rDoc.data().retailerWallet - amt });
+            transaction.update(db.collection("users").doc(userId), { balance: firebase.firestore.FieldValue.increment(amt) });
+        });
+        alert("Points sent successfully!"); loadRetailerData();
+    } catch (e) { alert("Error: " + e.message); }
+}
+
+async function openPublicResults(type){
+  document.getElementById('auth-screen').style.display='none'; document.getElementById('page-public-results').style.display='block'; document.getElementById('public-res-title').innerText=type==='2d'?'2D RESULTS':'3D RESULTS'; document.getElementById('public-res-title').style.color=type==='2d'?'#1976d2':'#2e7d32';
+  const container=document.getElementById('public-res-content'); container.innerHTML="<div style='text-align:center;padding:20px;'>Loading Results...</div>";
+  try{
+    const snapshot=await db.collection("results").orderBy("date", "desc").limit(200).get(); let allResults=[]; let uniqueKeys=new Set();
+    snapshot.forEach(doc=>{ 
+        const data=doc.data(); 
+        const actualDate=data.date||(data.timestamp?getLocalDateStr(data.timestamp.toDate()):''); 
+        const timeStr=normalizeTimeString(data.time); 
+        const key=actualDate+'_'+timeStr; 
+        if(timeStr && !uniqueKeys.has(key)){ uniqueKeys.add(key); allResults.push({...data,_sortDate:actualDate,_sortTime:timeStr}); } 
+    });
+    
+    allResults.sort((a,b)=>{ 
+        if(a._sortDate !== b._sortDate) return b._sortDate.localeCompare(a._sortDate);
+        return timeToMinutes(b._sortTime) - timeToMinutes(a._sortTime); 
+    });
+    
+    let html='';
+    allResults.forEach(data=>{
+      if(isFutureResult(data._sortDate, data._sortTime) || !isValidDrawTime(data._sortTime)) return; 
+      if(data._sortDate !== getLocalDateStr()) return; 
+      
+      const dateStr=`📅 ${data._sortDate}`;
+      if(type==='3d'&&(data.A||data.B||data.C)){ html+=`<div class="res-card" style="background:#fff;border-radius:8px;margin-bottom:15px;box-shadow:0 2px 5px rgba(0,0,0,.1);overflow:hidden;"><div class="res-card-header" style="background:#2c3e50;color:#fff;padding:12px 15px;font-size:18px;font-weight:bold;display:flex;justify-content:space-between;"><span>${dateStr}</span><span>⏰ ${data._sortTime}</span></div><div style="padding:15px;"><div style="display:flex;justify-content:space-around;font-size:24px;font-weight:bold;padding:10px 0;"><div style="color:#03a9f4;text-align:center;">A<br><span style="font-size:28px">${data.A||'---'}</span></div><div style="color:#4caf50;text-align:center;">B<br><span style="font-size:28px">${data.B||'---'}</span></div><div style="color:#9c27b0;text-align:center;">C<br><span style="font-size:28px">${data.C||'---'}</span></div></div></div></div>`; } 
+      else if(type==='2d'&&data.D){ html+=`<div class="res-card" style="background:#fff;border-radius:8px;margin-bottom:15px;box-shadow:0 2px 5px rgba(0,0,0,.1);overflow:hidden;"><div class="res-card-header" style="background:#1976d2;color:#fff;padding:12px 15px;font-size:18px;font-weight:bold;display:flex;justify-content:space-between;"><span>${dateStr}</span><span>⏰ ${data._sortTime}</span></div><div style="padding:15px;">`; ['10','30','50'].forEach(b=>{html+=`<div style="font-size:16px;font-weight:bold;color:#333;margin-bottom:10px;text-transform:uppercase;">Block ${b}-${parseInt(b)+9}</div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:10px;">`;for(let i=0;i<=9;i++){const p=(parseInt(b)+i).toString();const s=data.D[p]||'--';html+=`<div style="border:1px solid #ccc;border-radius:5px;padding:8px 0;text-align:center;font-size:16px;font-weight:bold;display:flex;justify-content:center;align-items:center;gap:4px;background:#fff;"><span style="color:#1976d2;font-size:14px;">${p}</span><span style="color:#000;font-size:14px;">-</span><span style="color:#d32f2f;font-size:16px;">${s}</span></div>`;}html+=`</div>`;});html+=`</div></div>`; }
+    });
+    if(!html)html="<div style='text-align:center;padding:20px;color:red;font-weight:bold;'>Aaj ka koi result nahi aaya hai.</div>"; container.innerHTML=html;
+  }catch(e){container.innerHTML=`<div style='text-align:center;padding:20px;color:red;'>Error loading results.<br><small>${e.message}</small></div>`;}
+}
+function closePublicResults(){document.getElementById('page-public-results').style.display='none';document.getElementById('auth-screen').style.display='flex';}
+
+function playWinSound(){try{const A=window.AudioContext||window.webkitAudioContext,c=new A(),s=c.currentTime,m=c.createGain();m.gain.value=5.0;m.connect(c.destination);[1047,1319,1568,2093,2637].forEach((f,i)=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;const t=s+i*.1;g.gain.setValueAtTime(1.0,t);g.gain.exponentialRampToValueAtTime(.001,t+.6);o.connect(g);g.connect(m);o.start(t);o.stop(t+.6);});setTimeout(()=>{try{c.close()}catch(e){}},3000);}catch(e){}}
+function showCoinSparkles(){const cn=document.createElement('div');cn.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;overflow:hidden';document.body.appendChild(cn);const em=['🪙','💰','✨','💸','🪙','✨','🎉','💎','🪙','✨'];for(let i=0;i<60;i++){const el=document.createElement('div');el.textContent=em[Math.floor(Math.random()*em.length)];const sz=25+Math.random()*30,dl=Math.random()*1.5,dr=1.8+Math.random()*1.5;el.style.cssText=`position:absolute;font-size:${sz}px;left:${Math.random()*100}%;top:-60px;animation:coinFall ${dr}s linear ${dl}s forwards`;cn.appendChild(el);}setTimeout(()=>{try{cn.remove()}catch(e){}},5000);}
+
+let isSignupMode=true;
+function toggleAuthMode(){isSignupMode=!isSignupMode;document.getElementById('auth-title').innerText=isSignupMode?"Create Account":"Login";document.getElementById('auth-btn').innerText=isSignupMode?"Sign Up":"Login";document.getElementById('auth-toggle-text').innerText=isSignupMode?"Already have an account? Login":"New user? Sign Up";document.getElementById('auth-error').innerText="";}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const authBtn = document.getElementById('auth-btn');
+    if(authBtn) { authBtn.onclick = null; authBtn.addEventListener('click', function(e) { e.preventDefault(); if(typeof handleAuth === 'function') { handleAuth(); } else { alert("System load nahi hua."); } }); }
+});
+
+function handleAuth(){const email=document.getElementById('auth-email').value.trim();const password=document.getElementById('auth-password').value;const errEl=document.getElementById('auth-error');if(!email||!password){errEl.innerText="Email aur Password bharo!";return;}if(password.length<6){errEl.innerText="Password kam se kam 6 letter ka hona chahiye!";return;}errEl.innerText="Processing...";errEl.style.color="blue";if(isSignupMode){auth.createUserWithEmailAndPassword(email,password).then(()=>{errEl.innerText="";}).catch(err=>{errEl.innerText=err.message;errEl.style.color="red";});}else{auth.signInWithEmailAndPassword(email,password).then(()=>{errEl.innerText="";}).catch(err=>{errEl.innerText="Galat Email ya Password!";errEl.style.color="red";});}}
+function logoutUser(){auth.signOut().then(()=>{location.reload();});}
+
+auth.onAuthStateChanged(user=>{
+  if(window.location.hash==='#admin'){document.getElementById('auth-screen').style.display='none';document.getElementById('main-app').style.display='none';document.getElementById('main-top-bar').style.display='none';return;}
+  if(user&&!user.email){auth.signOut();}
+  if(user&&user.email){currentUser=user;document.getElementById('auth-screen').style.display='none';document.getElementById('main-app').style.display='block';document.getElementById('main-top-bar').style.display='flex';initUserData();}
+  else{currentUser=null;document.getElementById('auth-screen').style.display='flex';document.getElementById('main-app').style.display='none';document.getElementById('main-top-bar').style.display='none';}
+});
+
+function initUserData(){
+  const userRef=db.collection("users").doc(currentUser.uid);
+  userRef.onSnapshot(doc=>{
+    if(!doc.exists){const refCodeInput=document.getElementById('auth-referral');const refCode=refCodeInput?refCodeInput.value.trim():"";userRef.set({email:currentUser.email,balance:0,referredBy:refCode||null,role:"user",createdAt:firebase.firestore.FieldValue.serverTimestamp()});}
+    else{ walletBalance=doc.data().balance; document.getElementById('balance').innerText="₹"+walletBalance.toFixed(2); if(doc.data().role === 'retailer') { document.getElementById('retailer-btn').style.display = 'block'; } else { document.getElementById('retailer-btn').style.display = 'none'; } }
+  });
+  
+  db.collection("tickets").where("userId","==",currentUser.uid).onSnapshot(snapshot=>{
+    boughtTickets=[];snapshot.forEach(doc=>{boughtTickets.push({id:doc.id,...doc.data()});});
+    if(document.getElementById('page-reprint').style.display==='block')renderReprint();
+    if(document.getElementById('page-cancel').style.display==='block')renderCancel();
+  });
+  db.collection("settings").doc("game").onSnapshot(doc => { if(doc.exists) isAutoResultOn = doc.data().autoResult !== false; else isAutoResultOn = true; });
+  
+  let lastShownResultKey = null;
+  db.collection("results").orderBy("date", "desc").limit(1000).onSnapshot(snapshot=>{
+    let tempResults=[];let uniqueKeys=new Set();
+    snapshot.forEach(doc=>{ 
+        const data=doc.data(); 
+        const actualDate = data.date || (data.timestamp ? getLocalDateStr(data.timestamp.toDate()) : getLocalDateStr()); 
+        data.date = actualDate; 
+        const timeStr = normalizeTimeString(data.time); 
+        data.time = timeStr; 
+        const key = actualDate + '_' + timeStr; 
+        if(timeStr && !uniqueKeys.has(key)){ 
+            uniqueKeys.add(key); 
+            tempResults.push(data); 
+        } 
+    });
+    
+    tempResults.sort((a,b)=>{ 
+        if(a.date !== b.date) return b.date.localeCompare(a.date);
+        return timeToMinutes(b.time) - timeToMinutes(a.time); 
+    });
+    
+    resultHistory=tempResults;
+    
+    if(resultHistory.length>0){
+      const now = new Date();
+      const nowMins = now.getHours() * 60 + now.getMinutes();
+      const todayStr = getLocalDateStr();
+      
+      let latestValidResult = null;
+      for(let r of resultHistory) {
+          if(r.date === todayStr && timeToMinutes(r.time) > nowMins) continue;
+          if(!isValidDrawTime(r.time)) continue;
+          latestValidResult = r;
+          break; 
+      }
+      
+      if(latestValidResult) {
+          currentResult = latestValidResult;
+          document.getElementById('res-A').innerText=currentResult.A||"- - -"; 
+          document.getElementById('res-B').innerText=currentResult.B||"- - -"; 
+          document.getElementById('res-C').innerText=currentResult.C||"- - -";
+          
+          const lastDrawEl = document.getElementById('last-draw-display'); 
+          if(lastDrawEl) lastDrawEl.innerText = "Last Draw: " + (currentResult.time || "--");
+
+          const key = (currentResult.date||'') + '_' + (currentResult.time||'');
+          if(lastShownResultKey === null){ lastShownResultKey = key; } 
+          else if(lastShownResultKey !== key){
+            lastShownResultKey = key;
+            if(currentResult.A||currentResult.B||currentResult.C){ 
+                const dStr=currentResult.date||''; 
+                document.getElementById('popup-3d-title').innerText=`🎉 ${dStr} - ${currentResult.time} 🎉`; 
+                document.getElementById('popup-res-A').innerText=currentResult.A||'---'; 
+                document.getElementById('popup-res-B').innerText=currentResult.B||'---'; 
+                document.getElementById('popup-res-C').innerText=currentResult.C||'---'; 
+                document.getElementById('result-popup-3d').style.display='flex'; 
+            } else if(currentResult.D){ 
+                render2DPopupContent(); 
+                document.getElementById('result-popup-2d').style.display='flex'; 
+            }
+          }
+      }
+    }
+    if(document.getElementById('page-result').style.display==='block')render3DResultPage();
+    if(document.getElementById('page-2d-result').style.display==='block')render2DResultPage();
+    if(document.getElementById('page-reprint').style.display==='block')renderReprint();
+  });
+}
+
+async function checkAndGenerateMissingResults(){
+  if (!isAutoResultOn) return; 
+  const now = new Date(); 
+  if (now.getHours() < 8) return;
+  try {
+      const today = getLocalDateStr(); 
+      const snapshot = await db.collection("results").where("date", "==", today).get(); 
+      const existingResults = {};
+      snapshot.forEach(doc => { existingResults[normalizeTimeString(doc.data().time)] = doc.data(); });
+      
+      let startT = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0); 
+      let endT = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), Math.floor(now.getMinutes()/15)*15, 0); 
+      if (endT.getTime() < startT.getTime()) return;
+
+      let slot = new Date(startT);
+      
+      while (slot.getTime() <= endT.getTime()) {
+        const h=slot.getHours(), m=slot.getMinutes(); 
+        if (h > 23 || (h === 23 && m > 0)) break;
+
+        const ap=h>=12?'PM':'AM';const dh=h>12?h-12:(h===0?12:h); 
+        const timeStr=normalizeTimeString(`${dh<10?'0'+dh:dh}:${m<10?'0'+m:m} ${ap}`);
+        
+        const existingData = existingResults[timeStr];
+        const needs3D = !existingData || (!existingData.A && !existingData.B && !existingData.C);
+        const needs2D = !existingData || !existingData.D || Object.keys(existingData.D).length < 30;
+
+        if(needs3D || needs2D){
+            let betsA = {}, betsB = {}, betsC = {}, bets2D = {};
+            try {
+                const ticketsSnap = await db.collection("tickets").where("advanceTime", "==", timeStr).where("advanceDate", "==", today).where("status", "==", "PENDING").get();
+                ticketsSnap.forEach(doc => {
+                    let t = doc.data();
+                    if (t.is2D) { let p = t.number.split('-'); if (!bets2D[p[0]]) bets2D[p[0]] = {}; bets2D[p[0]][p[1]] = (bets2D[p[0]][p[1]] || 0) + t.totalCost; } 
+                    else { if (t.panel === 'A') betsA[t.number] = (betsA[t.number] || 0) + t.totalCost; if (t.panel === 'B') betsB[t.number] = (betsB[t.number] || 0) + t.totalCost; if (t.panel === 'C') betsC[t.number] = (betsC[t.number] || 0) + t.totalCost; }
+                });
+            } catch(err) {
+                console.log("Database error, generating random result safely.");
+            }
+
+            const findSafeNum = (bets, is2D = false) => {
+                let bestNum = is2D ? Math.floor(Math.random() * 90 + 10).toString() : Math.floor(Math.random() * 900 + 100).toString();
+                let minPayout = 999999999;
+                let totalBets = Object.values(bets).reduce((a, b) => a + b, 0);
+
+                for(let i=0; i<100; i++) {
+                    let testNum = is2D ? Math.floor(Math.random() * 90 + 10).toString() : Math.floor(Math.random() * 900 + 100).toString();
+                    let payout = 0;
+                    for(let betNum in bets) {
+                        let cost = bets[betNum];
+                        if (is2D) { if (betNum === testNum) payout += (90)*cost; } 
+                        else { if (betNum === testNum) payout += 900*cost; let sortedTest = testNum.split('').sort().join(''); let sortedBet = betNum.split('').sort().join(''); if (sortedTest === sortedBet) { let isDouble = new Set(testNum.split('')).size === 2; payout += ((isDouble ? 3000 : 1500)/10)*cost; } }
+                    }
+                    if (payout < minPayout) { minPayout = payout; bestNum = testNum; }
+                    if (minPayout === 0) break;
+                }
+                
+                if (totalBets > 0 && minPayout === 0 && Math.random() < 0.2) {
+                    let betNums = Object.keys(bets);
+                    if (betNums.length > 0) {
+                        let chosen = betNums[Math.floor(Math.random() * betNums.length)];
+                        let payoutForChosen = is2D ? (90 * bets[chosen]) : (900 * bets[chosen]);
+                        if(payoutForChosen < totalBets) { return chosen; }
+                    }
+                }
+                return bestNum;
+            };
+
+            let A = existingData && existingData.A ? existingData.A : findSafeNum(betsA); 
+            let B = existingData && existingData.B ? existingData.B : findSafeNum(betsB); 
+            let C = existingData && existingData.C ? existingData.C : findSafeNum(betsC);
+            let D = existingData && existingData.D ? existingData.D : {};
+            
+            if (needs2D) {
+                ['10','30','50'].forEach(base => { 
+                    for(let i=0; i<=9; i++) { 
+                        let prefix = (parseInt(base)+i).toString(); 
+                        if(!D[prefix]) D[prefix] = findSafeNum(bets2D[prefix] || {}, true); 
+                    }
+                });
+            }
+
+            const docId = `${today}_${timeStr.replace(/[: ]/g,'_')}`; 
+            await db.collection("results").doc(docId).set({ time: timeStr, date: today, A: A, B: B, C: C, D: D, timestamp: firebase.firestore.FieldValue.serverTimestamp() }, {merge: true});
+        }
+        slot.setMinutes(slot.getMinutes()+15);
+      }
+  } catch(e) { console.error(e); }
+}
+setInterval(checkAndGenerateMissingResults, 30000);checkAndGenerateMissingResults();
+
+function updateTimers() {
+    try { const now=new Date(); const target=getNextDrawDate(); const diff=target-now; let timeStr = ""; if(diff>0){ const h=Math.floor((diff/(1000*60*60))); const m=Math.floor((diff/1000/60)%60); const s=Math.floor((diff/1000)%60); timeStr=`${h<10?'0':''}${h}:${m<10?'0':''}${m}:${s<10?'0':''}${s}`; } else { timeStr="Drawing..."; } const timerEl=document.getElementById('timer-display'); if(timerEl) timerEl.innerText=timeStr; const adminTimerEl=document.getElementById('admin-timer'); if(adminTimerEl) adminTimerEl.innerText=timeStr; } catch(e) { }
+}
+setInterval(updateTimers, 1000);
+function updateClock(){let n=new Date();document.getElementById('real-time-clock').innerText=`${n.toLocaleDateString('en-GB')}, ${n.toLocaleTimeString('en-US')}`;}
+setInterval(updateClock,1000);
+
+function loadAccountStats(){let totalPlayed=0;let totalWon=0;boughtTickets.forEach(t=>{totalPlayed+=t.totalCost;let win=getClaimedAmount(t);if(win>0)totalWon+=win;});const net=totalWon-totalPlayed;document.getElementById('acc-total-bets').innerText="₹"+totalPlayed;document.getElementById('acc-total-won').innerText="₹"+totalWon;const netEl=document.getElementById('acc-net-result');netEl.innerText="₹"+net;if(net>=0){netEl.style.color="#4caf50";document.getElementById('acc-net-box').className="stat-box profit";}else{netEl.style.color="#f44336";document.getElementById('acc-net-box').className="stat-box loss";}}
+
+function showCustomConfirm(t,m,cb){document.getElementById('custom-modal-title').innerText=t;document.getElementById('custom-modal-body').innerText=m;document.getElementById('custom-yes-btn').innerText="Yes";document.getElementById('custom-no-btn').style.display='block';document.getElementById('custom-modal').style.display='flex';confirmCallback=cb;}
+function showCustomAlert(t,m){document.getElementById('custom-modal-title').innerText=t;document.getElementById('custom-modal-body').innerText=m;document.getElementById('custom-yes-btn').innerText="OK";document.getElementById('custom-no-btn').style.display='none';document.getElementById('custom-modal').style.display='flex';confirmCallback=null;}
+function customConfirmYes(){document.getElementById('custom-modal').style.display='none';if(confirmCallback)confirmCallback(true);}
+function customConfirmNo(){document.getElementById('custom-modal').style.display='none';if(confirmCallback)confirmCallback(false);}
+
+function switchTab(t){currentTab=t;let b3=document.getElementById('tab-btn-3d'),b2=document.getElementById('tab-btn-2d');if(t==='3d'){document.getElementById('result-popup-2d').style.display='none';document.getElementById('section-3d').classList.remove('hidden');document.getElementById('section-2d').classList.add('hidden');document.getElementById('header-3d').style.display='block';b3.classList.add('active');b3.classList.remove('inactive');b2.classList.add('inactive');b2.classList.remove('active');}else{document.getElementById('result-popup-3d').style.display='none';document.getElementById('section-2d').classList.remove('hidden');document.getElementById('section-3d').classList.add('hidden');document.getElementById('header-3d').style.display='none';b2.classList.add('active');b2.classList.remove('inactive');b3.classList.add('inactive');b3.classList.remove('active');if(active2DGroup==='ALL'){renderPrefixButtons();generate2DGrid();}else{activate2DGroup(active2DGroup,document.getElementById('tab-btn-'+active2DGroup));}}}
+function showPage(p){document.getElementById('section-3d').classList.add('hidden');document.getElementById('section-2d').classList.add('hidden');document.getElementById('header-3d').style.display='none';document.querySelector('.game-tabs').style.display='none';document.getElementById('bottom-bar').style.display='none';document.getElementById('adv-banner').style.display='none';document.querySelectorAll('.page-overlay').forEach(x=>x.style.display='none');if(p==='cancel'){document.getElementById('page-cancel').style.display='block';renderCancel();}else if(p==='reprint'){document.getElementById('page-reprint').style.display='block';renderReprint();}else if(p==='result'){if(!resultFilterDate)resultFilterDate=getLocalDateStr();if(currentTab==='2d'){document.getElementById('page-2d-result').style.display='block';render2DResultPage();}else{document.getElementById('page-result').style.display='block';render3DResultPage();}}else if(p==='advance'){renderAdvancePage();}else if(p==='account'){document.getElementById('page-account').style.display='block';loadAccountStats();}}
+function hidePage(){document.querySelectorAll('.page-overlay').forEach(x=>x.style.display='none');document.querySelector('.game-tabs').style.display='flex';document.getElementById('bottom-bar').style.display='flex';if(selectedAdvanceTimes.length>0)document.getElementById('adv-banner').style.display='block';switchTab(currentTab);}
+
+function handlePanelAll(){const c=document.getElementById('panel-ALL').checked;document.querySelectorAll('.panel-cb').forEach(cb=>cb.checked=c);}
+function handlePanelIndividual(){let a=true;document.querySelectorAll('.panel-cb').forEach(cb=>{if(!cb.checked)a=false;});document.getElementById('panel-ALL').checked=a;}
+function updateInputConstraints(){const f=document.getElementById('input-num');let types=[];document.querySelectorAll('.type-cb:checked').forEach(cb=>types.push(cb.value));const isPair=types.some(t=>['FP','BP','SP','Any Pair'].includes(t));const is3D=types.some(t=>['Box','Straight'].includes(t));if(isPair&&!is3D){f.maxLength=2;f.placeholder="ADD 2 DIGITS";}else{f.maxLength=3;f.placeholder="ADD NUM.";}}
+function handleTypeAll(){const c=document.getElementById('type-ALL').checked;document.querySelectorAll('.type-cb').forEach(cb=>cb.checked=c);updateInputConstraints();}
+function handleTypeIndividual(){let a=true;document.querySelectorAll('.type-cb').forEach(cb=>{if(!cb.checked)a=false;});document.getElementById('type-ALL').checked=a;updateInputConstraints();}
+function generateLuckyNumber(){let types=[];document.querySelectorAll('.type-cb:checked').forEach(cb=>types.push(cb.value));const isPair=types.some(t=>['FP','BP','SP','Any Pair'].includes(t));document.getElementById('input-num').value=isPair&&types.length===1?Math.floor(Math.random()*90)+10:Math.floor(Math.random()*900)+100;autoAddNumber();}
+function updateCartPreview(){const previewDiv=document.getElementById('cart-preview');if(!previewDiv)return;if(cartItems.length===0){previewDiv.innerHTML='';return;}let html='';cartItems.forEach((item,index)=>{html+=`<div class="cart-pill">${item.number} <span onclick="removeCartItem(${index})">×</span></div>`;});previewDiv.innerHTML=html;}
+
+// ⭐ NEW: updateGrandTotal (missing function)
+function updateGrandTotal(){
+    let total = 0;
+    cartItems.forEach(item => {
+        if(item.is2D) total += item.points;
+        else total += item.panels.length * item.types.length * item.points;
+    });
+    for(let prefix in suffixSelections2D){
+        for(let suf in suffixSelections2D[prefix]){
+            total += suffixSelections2D[prefix][suf] * 2;
+        }
+    }
+    const drawCount = selectedAdvanceTimes.length > 0 ? selectedAdvanceTimes.length : 1;
+    total = total * drawCount;
+    const el = document.getElementById('grand-total');
+    if(el) el.innerText = total;
+}
+
+function removeCartItem(index){cartItems.splice(index,1);updateCartPreview();updateGrandTotal();}
+function autoAddNumber(){const f=document.getElementById('input-num'),num=f.value.trim();let types=[];document.querySelectorAll('.type-cb:checked').forEach(cb=>types.push(cb.value));const isPair=types.some(t=>['FP','BP','SP','Any Pair'].includes(t));const is3D=types.some(t=>['Box','Straight'].includes(t));let len=3;if(isPair&&!is3D)len=2;if(num.length===len){let panels=[];document.querySelectorAll('.panel-cb:checked').forEach(cb=>panels.push(cb.value));if(panels.length===0||types.length===0){showCustomAlert("Notice","Please select A/B/C and Type first!");f.value='';return;}const pts=parseInt(document.querySelector('input[name="pts"]:checked').value);cartItems.push({number:num,panels:panels,types:types,points:pts,is2D:false});f.value='';updateGrandTotal();updateCartPreview();}}
+
+function render2DPopupContent(){const c=document.getElementById('popup-2d-content');if(!c)return;const D=currentResult.D;if(!D||typeof D!=='object'){c.innerHTML='--';return;}let html='';['10','30','50'].forEach(b=>{html+='<div style="display:flex;justify-content:space-between;margin-bottom:5px">';for(let i=0;i<=9;i++){const p=(parseInt(b)+i).toString(),s=D[p]||'--';html+=`<span style="flex:1;text-align:center;color:#d32f2f">${p}-${s}</span>`;}html+='</div>';});c.innerHTML=html;}
+function closeResultPopup3D(){document.getElementById('result-popup-3d').style.display='none';if(currentResult.D){render2DPopupContent();document.getElementById('result-popup-2d').style.display='flex';}}
+function closeResultPopup2D(){document.getElementById('result-popup-2d').style.display='none';}
+
+function activate2DGroup(g,btn){active2DGroup=g;document.querySelectorAll('#range-tabs button').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');const base=parseInt(g);if(!selectedPrefixes2D[g].includes(activePrefix2D)||!activePrefix2D.startsWith(g[0]))activePrefix2D=base.toString();renderPrefixButtons();generate2DGrid();}
+function activateAll2DGroups(btn){active2DGroup='ALL';document.querySelectorAll('#range-tabs button').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');['10','30','50'].forEach(b=>{const arr=[];for(let i=0;i<=9;i++)arr.push((parseInt(b)+i).toString());selectedPrefixes2D[b]=arr;});renderPrefixButtons();generate2DGrid();}
+function renderPrefixButtons(){const c=document.getElementById('prefix-buttons');if(!c)return;let ps=[];if(active2DGroup==='ALL'){['10','30','50'].forEach(b=>{for(let i=0;i<=9;i++)ps.push((parseInt(b)+i).toString());});}else{const b=parseInt(active2DGroup);for(let i=0;i<=9;i++)ps.push((b+i).toString());}let html='';ps.forEach(p=>{const g=getGroupOfPrefix(p),sel=selectedPrefixes2D[g].includes(p),vw=p===activePrefix2D;let cls='prefix-btn';if(sel)cls+=' active';if(vw)cls+=' viewing';html+=`<button class="${cls}" onclick="togglePrefix('${p}')">${p}</button>`;});c.innerHTML=html;updatePrefixAllCheckbox();}
+function togglePrefix(p){const g=getGroupOfPrefix(p),arr=selectedPrefixes2D[g],i=arr.indexOf(p);activePrefix2D=p;if(i>-1)arr.splice(i,1);else arr.push(p);renderPrefixButtons();generate2DGrid();}
+function toggleAllPrefixes(cb){if(active2DGroup==='ALL'){['10','30','50'].forEach(b=>{if(cb.checked){const arr=[];for(let i=0;i<=9;i++)arr.push((parseInt(b)+i).toString());selectedPrefixes2D[b]=arr;}else{selectedPrefixes2D[b]=[];}});}else{const b=parseInt(active2DGroup);if(cb.checked){selectedPrefixes2D[active2DGroup]=[];for(let i=0;i<=9;i++)selectedPrefixes2D[active2DGroup].push((b+i).toString());}else{selectedPrefixes2D[active2DGroup]=[];}}renderPrefixButtons();generate2DGrid();}
+function updatePrefixAllCheckbox(){const el=document.getElementById('chk-all-prefix');if(!el)return;if(active2DGroup==='ALL'){const t=selectedPrefixes2D['10'].length+selectedPrefixes2D['30'].length+selectedPrefixes2D['50'].length;el.checked=t===30;}else{el.checked=selectedPrefixes2D[active2DGroup].length===10;}}
+function toggleFPMode(){fpModeActive=!fpModeActive;const btn=document.getElementById('fp-mode-btn');if(fpModeActive){btn.style.background='#9c27b0';btn.style.color='#fff';btn.innerText='FP MODE: ON';}else{btn.style.background='#fff';btn.style.color='#9c27b0';btn.innerText='FP MODE: OFF';}generate2DGrid();}
+function apply2DFilter(){generate2DGrid();}
+
+function generate2DGrid(){
+  const gc=document.getElementById('grid-2d-container');if(!gc)return;const prefixNum=parseInt(activePrefix2D),startNum=prefixNum*100;
+  document.getElementById('active-prefix-label').innerText=`Viewing: ${activePrefix2D}`;document.getElementById('grid-range-label').innerText=`(Grid ${startNum}-${startNum+99})`;
+  const ffe=document.getElementById('filter-even').checked,ffo=document.getElementById('filter-odd').checked;const fbe=document.getElementById('filter-back-even').checked,fbo=document.getElementById('filter-back-odd').checked;
+  const hintEl=document.getElementById('filter-hint');let parts=[];if(ffe&&!ffo)parts.push('Front Even');if(ffo&&!ffe)parts.push('Front Odd');if(fbe&&!fbo)parts.push('Back Even');if(fbo&&!fbe)parts.push('Back Odd');if(fpModeActive)parts.push('FP Mode ON');
+  hintEl.innerText=parts.length?'Filter: '+parts.join(' + '):'';hintEl.style.color=fpModeActive?'#9c27b0':'#d32f2f';
+  
+  let html='<div class="grid-head-all">ALL</div><div class="grid-head">BLOCK</div><div class="grid-head">START</div>';
+  for(let i=0;i<=9;i++)html+=`<div class="grid-head">${i}</div>`;
+  
+  const selSuff=suffixSelections2D[activePrefix2D]||{};
+  for(let block=0;block<10;block++){
+    html+=`<div class="grid-block-input"><input type="number" placeholder="-" min="1" onchange="applyBlockBet('${activePrefix2D}',${block},this)" onkeydown="if(event.key==='Enter')this.blur()"></div>`;const bl=block===0?'1000':(startNum+block*10);html+=`<div class="grid-block-label">${bl}</div>`;
+    for(let j=0;j<=9;j++){
+      const suf=(block*10+j).toString().padStart(2,'0');const fullNum=startNum+(block*10+j);const mult=selSuff.hasOwnProperty(suf)?selSuff[suf]:'';const isAct=mult!==''?'active':'';
+      const fd=parseInt(suf[0]),ld=parseInt(suf[1]);let m=true;if(ffe&&!ffo)m=m&&(fd%2===0);else if(ffo&&!ffe)m=m&&(fd%2===1);if(fbe&&!fbo)m=m&&(ld%2===0);else if(fbo&&!fbe)m=m&&(ld%2===1);const fc=m?'':'filtered-out';
+      html+=`<div class="cell-2d ${isAct} ${fc}" id="cell-${activePrefix2D}-${suf}" onclick="openMultiplierModal('${activePrefix2D}','${suf}')"><div class="cell-top">${fullNum}</div><div class="cell-bottom">${mult}</div></div>`;
+    }
+  }
+  gc.innerHTML=html;
+}
+
+let currentModalPrefix='',currentModalSuffix='';const allowedMultipliers=[1,2,3,4,5,6,7,8,9,10,15,20,25,50,100];
+function openMultiplierModal(p,s){currentModalPrefix=p;currentModalSuffix=s;let title=`Select Qty for ${p}-${s}`;if(fpModeActive){const f=getFPFamily(s);if(f)title=`FP(${s}) - 8 cells`;}document.getElementById('mult-title').innerText=title;let html='';allowedMultipliers.forEach(v=>{html+=`<button class="mult-btn" onclick="setMultiplier(${v})">${v}</button>`;});html+=`<button class="mult-btn clear" onclick="setMultiplier(0)">CLEAR</button>`;document.getElementById('mult-grid-options').innerHTML=html;document.getElementById('multiplier-modal').style.display='block';}
+function closeMultiplierModal(){document.getElementById('multiplier-modal').style.display='none';}
+function setMultiplier(val){
+  const g=getGroupOfPrefix(currentModalPrefix);let allSel=[];['10','30','50'].forEach(x=>{allSel=allSel.concat(selectedPrefixes2D[x]);});
+  if(allSel.length===0){allSel=[currentModalPrefix];if(!selectedPrefixes2D[g].includes(currentModalPrefix)){selectedPrefixes2D[g].push(currentModalPrefix);renderPrefixButtons();}}
+  let sufs=[currentModalSuffix];if(fpModeActive){const f=getFPFamily(currentModalSuffix);if(f)sufs=Array.from(f);}
+  allSel.forEach(p=>{if(!suffixSelections2D[p])suffixSelections2D[p]={};sufs.forEach(sf=>{if(val===0)delete suffixSelections2D[p][sf];else suffixSelections2D[p][sf]=val;});});
+  sufs.forEach(sf=>{const cell=document.getElementById('cell-'+currentModalPrefix+'-'+sf);if(cell){const bd=cell.querySelector('.cell-bottom');if(val===0||!suffixSelections2D[currentModalPrefix]||!suffixSelections2D[currentModalPrefix][sf]){cell.classList.remove('active');bd.innerText='';}else{cell.classList.add('active');bd.innerText=val;}}});
+  closeMultiplierModal();updateGrandTotal();
+}
+function applyBlockBet(p,bIdx,inputEl){
+  const val=parseInt(inputEl.value);if(isNaN(val)||val<1){inputEl.value='';return;}
+  const g=getGroupOfPrefix(p);let allSel=[];['10','30','50'].forEach(x=>{allSel=allSel.concat(selectedPrefixes2D[x]);});
+  if(allSel.length===0){allSel=[p];if(!selectedPrefixes2D[g].includes(p)){selectedPrefixes2D[g].push(p);renderPrefixButtons();}}
+  allSel.forEach(pp=>{if(!suffixSelections2D[pp])suffixSelections2D[pp]={};for(let j=0;j<=9;j++){const suf=(bIdx*10+j).toString().padStart(2,'0');suffixSelections2D[pp][suf]=val;}});
+  for(let j=0;j<=9;j++){const suf=(bIdx*10+j).toString().padStart(2,'0');const cell=document.getElementById('cell-'+p+'-'+suf);if(cell){cell.classList.add('active');cell.querySelector('.cell-bottom').innerText=val;}}
+  inputEl.value='';inputEl.blur();updateGrandTotal();
+}
+function clear2DSelections(){if(active2DGroup==='ALL'){['10','30','50'].forEach(b=>{selectedPrefixes2D[b]=[];for(let i=0;i<=9;i++)suffixSelections2D[(parseInt(b)+i).toString()]={};});activePrefix2D='10';}else{selectedPrefixes2D[active2DGroup]=[];const b=parseInt(active2DGroup);for(let i=0;i<=9;i++)suffixSelections2D[(b+i).toString()]={};activePrefix2D=b.toString();}renderPrefixButtons();generate2DGrid();updateGrandTotal();}
+
+function getNextDrawTimeString(){
+    const nD = getNextDrawDate();
+    const ap = nD.getHours() >= 12 ? 'PM' : 'AM';
+    const dH = nD.getHours() > 12 ? nD.getHours() - 12 : (nD.getHours() === 0 ? 12 : nD.getHours());
+    const dM = nD.getMinutes() < 10 ? '0' + nD.getMinutes() : nD.getMinutes();
+    return `${dH < 10 ? '0' + dH : dH}:${dM} ${ap}`;
+}
+
+function buyTicket(){
+  if(cartItems.length===0){showCustomAlert("Notice","Please add at least one number!");return;}
+  let sTC=0;cartItems.forEach(t=>{if(t.is2D)sTC+=t.points;else sTC+=t.panels.length*t.types.length*t.points;});
+  const tD=selectedAdvanceTimes.length>0?selectedAdvanceTimes.length:1,fTC=sTC*tD;
+  const ttStr=selectedAdvanceTimes.length>0?`${selectedAdvanceTimes.length} Advance Draws`:`Draw at ${getNextDrawTimeString()}`;
+  showCustomConfirm("Confirm Purchase",`Ticket for: ${ttStr}\nTotal Points to Deduct: ₹${fTC}\n\nDo you want to confirm this purchase?`,async function(ok){
+    if(ok){
+      try{
+        const tb=selectedAdvanceTimes.length>0?selectedAdvanceTimes:[{date:getLocalDateStr(getNextDrawDate()),time:getNextDrawTimeString()}];
+        const userRef=db.collection("users").doc(currentUser.uid);
+        const ts=new Date().toLocaleTimeString();const pId=Date.now();let rItems=[],gSet=new Set();
+        await db.runTransaction(async (transaction) => {
+            const userDoc = await transaction.get(userRef);
+            if (!userDoc.exists) throw new Error("User not found!");
+            const realBalance = userDoc.data().balance;
+            if (realBalance < fTC) throw new Error("Insufficient Balance in DB!");
+            let retDoc = null; let retRef = null;
+            if(userDoc.data().referredBy){ retRef = db.collection("users").doc(userDoc.data().referredBy); retDoc = await transaction.get(retRef); }
+            transaction.update(userRef, { balance: realBalance - fTC });
+            tb.forEach(aT=>{cartItems.forEach(ci=>{
+                if(ci.is2D){
+                    const tRef=db.collection("tickets").doc();
+                    transaction.set(tRef,{userId:currentUser.uid,purchaseId:pId,number:ci.number,panel:'2D',type:'Single',points:ci.points,totalCost:ci.points,timestamp:ts,status:"PENDING",advanceTime:normalizeTimeString(aT.time),advanceDate:aT.date,is2D:true,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+                    rItems.push({number:ci.number,type:'2D',panel:'2D',points:ci.points});gSet.add('2D');
+                }else{
+                    ci.panels.forEach(p=>{ci.types.forEach(ty=>{
+                        const tRef=db.collection("tickets").doc();
+                        transaction.set(tRef,{userId:currentUser.uid,purchaseId:pId,number:ci.number,panel:p,type:ty,points:ci.points,totalCost:ci.points,timestamp:ts,status:"PENDING",advanceTime:normalizeTimeString(aT.time),advanceDate:aT.date,is2D:false,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+                        rItems.push({number:ci.number,type:ty,panel:p,points:ci.points});gSet.add(p);
+                    });});
+                }
+            });});
+            if(retDoc && retDoc.exists){ const bonus = Math.round(fTC*0.10); transaction.update(retRef,{balance: retDoc.data().balance + bonus, referralEarnings: (retDoc.data().referralEarnings || 0) + bonus}); }
+        });
+        showReceiptModal(pId,tb,rItems,fTC,Array.from(gSet).join(', '));if(selectedAdvanceTimes.length>0)clearAdvanceTimes();clearCart();
+      }catch(e){console.error(e);showCustomAlert("Error", e.message || "Error buying ticket!");}
+    }
+  });
+}
+
+// ⭐ NEW: buy2DTicket (missing function)
+async function buy2DTicket(){
+    let items = [];
+    let allSel = [];
+    ['10','30','50'].forEach(x => { allSel = allSel.concat(selectedPrefixes2D[x]); });
+    allSel.forEach(prefix => {
+        const sufs = suffixSelections2D[prefix] || {};
+        for(let suf in sufs){
+            items.push({number: prefix + '-' + suf, points: sufs[suf] * 2});
+        }
+    });
+    if(items.length === 0) return showCustomAlert("Notice", "Please select at least one number!");
+    let sTC = items.reduce((s, i) => s + i.points, 0);
+    const tD = selectedAdvanceTimes.length > 0 ? selectedAdvanceTimes.length : 1;
+    const fTC = sTC * tD;
+    const ttStr = selectedAdvanceTimes.length > 0 ? `${selectedAdvanceTimes.length} Advance Draws` : `Draw at ${getNextDrawTimeString()}`;
+    showCustomConfirm("Confirm Purchase", `Ticket for: ${ttStr}\nTotal Points to Deduct: ₹${fTC}\n\nDo you want to confirm this purchase?`, async function(ok){
+        if(ok){
+            try {
+                const tb = selectedAdvanceTimes.length > 0 ? selectedAdvanceTimes : [{date:getLocalDateStr(getNextDrawDate()), time:getNextDrawTimeString()}];
+                const userRef = db.collection("users").doc(currentUser.uid);
+                const ts = new Date().toLocaleTimeString();
+                const pId = Date.now();
+                let rItems = [];
+                await db.runTransaction(async (transaction) => {
+                    const userDoc = await transaction.get(userRef);
+                    if (!userDoc.exists) throw new Error("User not found!");
+                    const realBalance = userDoc.data().balance;
+                    if (realBalance < fTC) throw new Error("Insufficient Balance!");
+                    let retDoc = null, retRef = null;
+                    if(userDoc.data().referredBy){
+                        retRef = db.collection("users").doc(userDoc.data().referredBy);
+                        retDoc = await transaction.get(retRef);
+                    }
+                    transaction.update(userRef, { balance: realBalance - fTC });
+                    tb.forEach(aT => {
+                        items.forEach(ci => {
+                            const tRef = db.collection("tickets").doc();
+                            transaction.set(tRef, {
+                                userId: currentUser.uid, purchaseId: pId, number: ci.number,
+                                panel: '2D', type: 'Single', points: ci.points, totalCost: ci.points,
+                                timestamp: ts, status: "PENDING", advanceTime: normalizeTimeString(aT.time),
+                                advanceDate: aT.date, is2D: true,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            rItems.push({number: ci.number, type: '2D', panel: '2D', points: ci.points});
+                        });
+                    });
+                    if(retDoc && retDoc.exists){
+                        const bonus = Math.round(fTC * 0.10);
+                        transaction.update(retRef, {
+                            balance: retDoc.data().balance + bonus,
+                            referralEarnings: (retDoc.data().referralEarnings || 0) + bonus
+                        });
+                    }
+                });
+                showReceiptModal(pId, tb, rItems, fTC, '2D');
+                if(selectedAdvanceTimes.length > 0) clearAdvanceTimes();
+                clear2DSelections();
+            } catch(e) {
+                console.error(e);
+                showCustomAlert("Error", e.message || "Error buying ticket!");
+            }
+        }
+    });
+}
+
+function clearCart(){cartItems=[];updateCartPreview();updateGrandTotal();}
+function refreshPage(){location.reload();}
+
+function showReceiptModal(pId,tb,rItems,totalPts,groupStr){
+  const idStr='X'+pId.toString(36).substring(3,11).toUpperCase();
+  const dO=new Date();const dStr=`${dO.getFullYear()}-${String(dO.getMonth()+1).padStart(2,'0')}-${String(dO.getDate()).padStart(2,'0')} ${String(dO.getHours()).padStart(2,'0')}:${String(dO.getMinutes()).padStart(2,'0')}:${String(dO.getSeconds()).padStart(2,'0')}`;
+  const today=getLocalDateStr();
+  document.getElementById('rcpt-id').innerText=idStr; document.getElementById('rcpt-date').innerText=dStr; document.getElementById('rcpt-group').innerText=groupStr;
+  document.getElementById('rcpt-draw-times').innerHTML=tb.map(t=>{const time=normalizeTimeString(t.time)||t;const date=t.date&&t.date!==today?' <span style="font-size:10px;color:#666">('+t.date+')</span>':'';return `<span class="receipt-draw-badge">${time}${date}</span>`;}).join(' ');
+  let tbody='';rItems.forEach(it=>{const td=it.type==='2D'?'2D':`${it.panel}-${it.type}`;tbody+=`<tr><td>${it.number}</td><td>${td}</td><td>${it.points}</td></tr>`;});
+  document.getElementById('rcpt-tbody').innerHTML=tbody; document.getElementById('rcpt-total-val').innerText=totalPts;
+  currentReceiptData={id:idStr,date:dStr,total:totalPts,items:rItems,times:tb};
+  document.getElementById('receipt-modal').style.display='flex';
+}
+
+function shareTicketText(){if(!currentReceiptData)return;let text=`*GOLDWIN TICKET*\nID: ${currentReceiptData.id}\nDate: ${currentReceiptData.date}\nDraw: ${currentReceiptData.times.map(t=>normalizeTimeString(t.time)||t).join(', ')}\n\n`;currentReceiptData.items.forEach(it=>{text+=`${it.number} (${it.type}) - ${it.points} pts\n`;});text+=`\n*Total: ${currentReceiptData.total} pts*`;if(navigator.share){navigator.share({title:'Goldwin Ticket',text:text}).catch(e=>{});}else{window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank');}}
+function closeReceipt(){document.getElementById('receipt-modal').style.display='none';}
+
+function renderReprint(){
+    const list=document.getElementById('reprint-list');if(!list)return;
+    let html=''; const todayStr=getLocalDateStr(); const todayTickets=boughtTickets.filter(t=>t.advanceDate===todayStr);
+    if(todayTickets.length === 0) { list.innerHTML="<div style='text-align:center;color:#777;padding:20px;'>Aaj ke liye koi ticket nahi hai.</div>"; return; }
+
+    const grouped={};
+    todayTickets.forEach(t=>{
+        const pId=t.purchaseId||t.id;
+        if(!grouped[pId]) grouped[pId]={id:pId,items:[],total:0,time:t.timestamp,drawDate:t.advanceDate,times:new Set()};
+        grouped[pId].items.push(t); grouped[pId].total+=t.totalCost; if(t.advanceTime) grouped[pId].times.add(normalizeTimeString(t.advanceTime));
+    });
+
+    const sorted=Object.values(grouped).sort((a,b)=>(b.id-a.id));
+    sorted.forEach(g=>{
+        // ✅ FIXED: only count unclaimed win amount
+        let unclaimedWin = 0; let hasWinning = false; let hasUnclaimed = false; 
+        g.items.forEach(i => { 
+            const win = getClaimedAmount(i); 
+            if (win > 0) { 
+                hasWinning = true; 
+                if (i.status !== 'CLAIMED') { unclaimedWin += win; hasUnclaimed = true; } 
+            } 
+        });
+
+        let claimBtnHTML = '';
+        if (hasWinning && hasUnclaimed) { 
+            claimBtnHTML = `<button class="claim-btn" onclick="claimTicket('${g.id}')">💰 CLAIM ₹${unclaimedWin}</button>`; 
+        } else if (hasWinning) { 
+            claimBtnHTML = `<span class="claimed">✔ CLAIMED</span>`; 
+        } else { 
+            claimBtnHTML = `<span class="not-win">Not Won</span>`; 
+        }
+
+        let timesArray = Array.from(g.times); timesArray.sort((a,b)=>timeToMinutes(a)-timeToMinutes(b)); let timeDisplay = timesArray.join(', ');
+        if(timesArray.length > 2) { timeDisplay = `${timesArray[0]} to ${timesArray[timesArray.length-1]}`; }
+
+        html+=`<div class="reprint-card" style="flex-direction:column; align-items:flex-start; padding:10px;">
+            <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:5px; border-bottom:1px dashed #ccc; padding-bottom:5px;">
+                <span style="font-weight:bold; color:#333;">ID: X${g.id.toString(36).substring(3,8).toUpperCase()}</span>
+                <span style="font-size:11px; color:#777;">${g.time}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:5px;">
+                <span style="font-size:12px; color:#555;">Draw Times: <b>${timeDisplay}</b></span>
+                <span style="color:#d32f2f; font-weight:bold;">Total: ₹${g.total}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; width:100%; align-items:center; margin-top:5px;">
+                <button class="view-btn" onclick="viewTicketDetails(${g.id})">👁 VIEW</button>${claimBtnHTML}
+            </div>
+        </div>`;
+    });
+    list.innerHTML=html;
+}
+
+function viewTicketDetails(pId){
+    const tGroup = boughtTickets.filter(t => String(t.purchaseId || t.id) === String(pId)); if(!tGroup || tGroup.length===0) return;
+    const idStr='X'+Number(pId).toString(36).substring(3,11).toUpperCase(); const first = tGroup[0];
+    let timesSet = new Set(); tGroup.forEach(t => { if(t.advanceTime) timesSet.add(normalizeTimeString(t.advanceTime)); }); let timesArray = Array.from(timesSet).sort((a,b)=>timeToMinutes(a)-timeToMinutes(b)); let timeStr = timesArray.join(', ');
+    if(timesArray.length > 2) { timeStr = `${first.advanceDate} | ${timesArray[0]} to ${timesArray[timesArray.length-1]}`; } else { timeStr = `${first.advanceDate} | ${timeStr}`; }
+    
+    document.getElementById('rcpt-id').innerText = idStr; document.getElementById('rcpt-date').innerText = first.timestamp; document.getElementById('rcpt-group').innerText = first.is2D ? '2D Game' : '3D Game'; document.getElementById('rcpt-draw-times').innerHTML = `<span class="receipt-draw-badge">${timeStr}</span>`;
+    
+    let tbody=''; let totalPts=0;
+    tGroup.forEach(it=>{ const td=it.type==='2D'?'2D':`${it.panel}-${it.type}`; tbody+=`<tr><td>${it.number}</td><td>${td}</td><td>${it.points}</td></tr>`; totalPts+=it.points; });
+    document.getElementById('rcpt-tbody').innerHTML=tbody; document.getElementById('rcpt-total-val').innerText=totalPts;
+    document.querySelector('#receipt-modal .receipt-buttons').innerHTML = `<button class="rcpt-btn" onclick="closeReceipt()" style="background:#d32f2f;">CLOSE</button>`;
+    document.getElementById('receipt-modal').style.display='flex';
+}
+
+function getClaimedAmount(t){
+  const tDate=t.advanceDate;const tTime=normalizeTimeString(t.advanceTime); const match=resultHistory.find(r=>r.date===tDate&&r.time===tTime); if(!match)return 0;
+  if(t.is2D){ if(!match.D)return 0; const parts=t.number.split('-'); if(match.D[parts[0]]===parts[1])return t.points*90; return 0; } 
+  else { if(t.panel==='A'&&match.A===t.number)return t.points*900; if(t.panel==='B'&&match.B===t.number)return t.points*900; if(t.panel==='C'&&match.C===t.number)return t.points*900; return 0; }
+}
+
+// ✅ FIXED: String comparison + correct status filter + no reload
+async function claimTicket(pId){
+    const tGroup = boughtTickets.filter(t => 
+        String(t.purchaseId || t.id) === String(pId) && t.status !== 'CLAIMED'
+    );
+    if(tGroup.length === 0) return showCustomAlert("Notice", "No pending winning tickets found.");
+    
+    let totalWin = 0; 
+    tGroup.forEach(t => { totalWin += getClaimedAmount(t); }); 
+    if(totalWin <= 0) return showCustomAlert("Notice", "No winning amount to claim.");
+    
+    showCustomConfirm("Claim Winnings", `Do you want to claim ₹${totalWin}?`, async function(ok){
+        if(ok){
+            try {
+                const batch = db.batch(); 
+                tGroup.forEach(t => { 
+                    if(getClaimedAmount(t) > 0) 
+                        batch.update(db.collection("tickets").doc(t.id), { status: 'CLAIMED' }); 
+                });
+                batch.update(db.collection("users").doc(currentUser.uid), 
+                    { balance: firebase.firestore.FieldValue.increment(totalWin) });
+                await batch.commit(); 
+                playWinSound(); 
+                showCoinSparkles(); 
+                showCustomAlert("🎉 CONGRATULATIONS! 🎉", 
+                    `You have successfully claimed ₹${totalWin} points.`);
+            } catch(e) { 
+                showCustomAlert("Error", e.message); 
+            }
+        }
+    });
+}
+
+function renderCancel(){
+  const list=document.getElementById('cancel-list');if(!list)return;let html=''; const pending=boughtTickets.filter(t=>t.status==='PENDING'); const grouped={};
+  pending.forEach(t=>{
+    const pId=t.purchaseId||t.id;
+    if(!grouped[pId]) grouped[pId]={id:pId,items:[],total:0,time:t.timestamp,drawDate:t.advanceDate,times:new Set()};
+    grouped[pId].items.push(t); grouped[pId].total+=t.totalCost; if(t.advanceTime) grouped[pId].times.add(normalizeTimeString(t.advanceTime));
+  });
+  const sorted=Object.values(grouped).sort((a,b)=>(b.id-a.id));
+  sorted.forEach(g=>{
+    let timesArray = Array.from(g.times).sort((a,b)=>timeToMinutes(a)-timeToMinutes(b)); let timeDisplay = timesArray.join(', ');
+    if(timesArray.length > 2) { timeDisplay = `${timesArray[0]} to ${timesArray[timesArray.length-1]}`; }
+    html+=`<div class="reprint-card">
+      <div class="reprint-info"><b>Ticket ID: X${g.id.toString(36).substring(3,8).toUpperCase()}</b><br>Draw: ${g.drawDate} <b>${timeDisplay}</b><br>Total: <span style="color:#d32f2f">₹${g.total}</span></div>
+      <button class="cancel-tkt-btn" onclick="cancelTicket('${g.id}',${g.total})">Cancel</button>
+    </div>`;
+  });
+  list.innerHTML=html||"<div style='text-align:center;color:#777;'>No pending tickets to cancel.</div>";
+}
+
+function cancelTicket(pId,amt){
+  showCustomConfirm("Cancel Ticket","Are you sure you want to cancel this ticket? ₹"+amt+" will be refunded.",async function(ok){
+    if(ok){
+      try{
+        const snap=await db.collection("tickets").where("purchaseId","==",parseInt(pId)||pId).where("userId","==",currentUser.uid).get();
+        if(snap.empty)return showCustomAlert("Error","Ticket not found!");
+        const batch=db.batch();let totalRefund=0;
+        // 👇 TIME CHECK CODE START 👇
+let ticketTime = d.timestamp; 
+if (ticketTime && typeof ticketTime.toDate === 'function') {
+    ticketTime = ticketTime.toDate().getTime(); 
+}
+
+if (ticketTime) {
+    let drawDuration = 15 * 60 * 1000; // 15 minutes ka draw
+    let currentDraw = Math.floor(Date.now() / drawDuration);
+    let ticketDraw = Math.floor(ticketTime / drawDuration);
+
+    if (currentDraw !== ticketDraw) {
+        alert("❌ Ye ticket cancel nahi ho sakta!\nSirf usi draw ke andar cancel hota hai.");
+        return; // Cancel process yahin ruk jayega
+    }
+}
+// 👆 TIME CHECK CODE END 👆
+
+        snap.forEach(doc=>{const d=doc.data();if(d.status==='PENDING'){batch.delete(doc.ref);totalRefund+=d.totalCost;}});
+        batch.update(db.collection("users").doc(currentUser.uid),{balance:firebase.firestore.FieldValue.increment(totalRefund)});
+        await batch.commit();showCustomAlert("Success","Ticket cancelled and ₹"+totalRefund+" refunded.");renderCancel();
+      }catch(e){showCustomAlert("Error",e.message);}
+    }
+  });
+}
+
+function render3DResultPage(){
+  const c=document.getElementById('page-3d-result-content');if(!c)return; const filterDate = resultFilterDate || getLocalDateStr();
+  let html=`
+  <div class="snap-header"><span>3D DRAW RESULTS</span><button class="close-x" onclick="hidePage()">✕</button></div>
+  <div class="snap-filter-bar"><div style="display:flex; align-items:center; gap:8px;"><span style="font-size:12px; color:#777;">Date:</span><input type="date" class="snap-date-input" value="${filterDate}" onchange="resultFilterDate=this.value; render3DResultPage();"></div><button class="snap-today-btn" onclick="resultFilterDate=getLocalDateStr(); render3DResultPage();">Today</button></div>
+  <div class="snap-seq-bar"><span>Sequence: 🕒 Earliest First (08:00 AM →)</span></div>
+  <div class="snap-table-wrapper"><table class="snap-table"><thead><tr><th class="th-time">Time</th><th class="th-A">A</th><th class="th-B">B</th><th class="th-C">C</th></tr></thead><tbody>`;
+  
+  const dailyResults = resultHistory.filter(r => r.date === filterDate && (r.A || r.B || r.C) && !isFutureResult(r.date, r.time) && isValidDrawTime(r.time));
+  
+  const uniqueDaily = [];
+  const seenTimes = new Set();
+  dailyResults.forEach(r => {
+      const t = normalizeTimeString(r.time);
+      if(!seenTimes.has(t)) {
+          seenTimes.add(t);
+          uniqueDaily.push(r);
+      }
+  });
+  
+  if(uniqueDaily.length === 0) { html += `<tr><td colspan="4" style="padding:30px; color:#777;">No results found for this date.</td></tr>`; } 
+  else { 
+      uniqueDaily.sort((a,b)=>timeToMinutes(a.time)-timeToMinutes(b.time)).forEach(r=>{
+          html += `<tr><td class="td-time"><span>${r.time}</span><button class="snap-share-btn" onclick="shareResult('${r.time}','${r.A}','${r.B}','${r.C}')">Share ➔</button></td><td class="td-A">${r.A || '-'}</td><td class="td-B">${r.B || '-'}</td><td class="td-C">${r.C || '-'}</td></tr>`;
+      }); 
+  }
+  
+  html += `</tbody></table></div><div class="snap-close-btn-wrapper"><button class="snap-close-btn" onclick="hidePage()">CLOSE</button></div>`;
+  c.innerHTML=html;
+}
+
+function render2DResultPage(){
+  const c=document.getElementById('page-2d-result-content');if(!c)return; const filterDate = resultFilterDate || getLocalDateStr();
+  let html=`
+  <div class="snap-header"><span>2D DRAW RESULTS</span><button class="close-x" onclick="hidePage()">✕</button></div>
+  <div class="snap-filter-bar"><div style="display:flex; align-items:center; gap:8px;"><span style="font-size:12px; color:#777;">Date:</span><input type="date" class="snap-date-input" value="${filterDate}" onchange="resultFilterDate=this.value; render2DResultPage();"></div><button class="snap-today-btn" onclick="resultFilterDate=getLocalDateStr(); render2DResultPage();">Today</button></div>
+  <div class="snap-seq-bar"><span>Sequence: 🕒 Earliest First (08:00 AM →)</span></div>
+  <div class="snap-table-wrapper" style="padding-bottom:15px;">`;
+  
+  const dailyResults = resultHistory.filter(r => r.date === filterDate && r.D && !isFutureResult(r.date, r.time) && isValidDrawTime(r.time));
+  
+  const uniqueDaily = [];
+  const seenTimes = new Set();
+  dailyResults.forEach(r => {
+      const t = normalizeTimeString(r.time);
+      if(!seenTimes.has(t)) {
+          seenTimes.add(t);
+          uniqueDaily.push(r);
+      }
+  });
+  
+  if(uniqueDaily.length === 0) { html += `<div style='text-align:center; padding:30px; color:#777;'>No results found for this date.</div>`; } 
+  else {
+    uniqueDaily.sort((a,b)=>timeToMinutes(a.time)-timeToMinutes(b.time)).forEach(r=>{
+      html += `<div style="background:#333; color:#fff; padding:10px 15px; display:flex; justify-content:space-between; align-items:center; margin-top:15px; font-weight:bold;"><span style="font-size:15px;">DRAW TIME: ${r.time}</span><button class="snap-share-btn" style="background:#4caf50; border-radius:20px; padding:5px 12px; font-size:12px;" onclick="share2DResult('${r.time}', '${JSON.stringify(r.D).replace(/"/g, '&quot;')}')">Share 2D Results on WhatsApp ➔</button></div>`;
+      ['10','30','50'].forEach(b=>{ let end = parseInt(b)+9; html += `<div class="snap-2d-block-header">BLOCK ${b}-${end}</div><div class="snap-2d-grid">`; for(let i=0;i<=9;i++){ const p = (parseInt(b)+i).toString(); const s = r.D[p] || '--'; html += `<div class="snap-2d-cell" style="background:#fafafa;"><div class="p">${p}</div><div class="s">${s}</div></div>`; } html += `</div>`; });
+    });
+  }
+  html += `</div><div class="snap-close-btn-wrapper" style="background:transparent; text-align:center;"><button class="snap-close-btn" style="background:#d32f2f; width:80%;" onclick="hidePage()">CLOSE</button></div>`;
+  c.innerHTML=html;
+}
+
+function renderAdvancePage(){
+    const now = new Date(); let listHtml = '';
+    
+    let startT = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0);
+    if (now > startT) {
+        let minutes = now.getMinutes(); let remainder = minutes % 15;
+        if (remainder !== 0) { startT = new Date(now.getTime() + (15 - remainder) * 60000); } 
+        else { startT = new Date(now.getTime() + 15 * 60000); }
+        startT.setSeconds(0, 0);
+    }
+    if (now.getHours() >= 23) { startT = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 8, 0, 0); }
+    let endT = new Date(startT.getFullYear(), startT.getMonth(), startT.getDate(), 23, 0, 0);
+    
+    for(let t = new Date(startT); t.getTime() <= endT.getTime(); t.setMinutes(t.getMinutes()+15)) {
+        const h = t.getHours(), m = t.getMinutes(); const ap = h >= 12 ? 'PM' : 'AM'; const dh = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+        const timeStr = normalizeTimeString(`${dh<10?'0'+dh:dh}:${m<10?'0'+m:m} ${ap}`); const dateStr = getLocalDateStr(t);
+        const isSel = selectedAdvanceTimes.some(st => normalizeTimeString(st.time) === timeStr && st.date === dateStr);
+        listHtml += `<button class="adv-time-btn ${isSel?'selected':''}" onclick="toggleAdvanceTime('${dateStr}','${timeStr}')">${timeStr}</button>`;
+    }
+    document.getElementById('adv-time-slots').innerHTML = listHtml;
+    updateAdvanceApplyBtn();
+    document.getElementById('advanceModal').style.display = 'flex';
+}
+
+function updateAdvanceApplyBtn() { const btn = document.getElementById('adv-apply-btn'); if(btn) btn.innerText = `APPLY (${selectedAdvanceTimes.length})`; }
+function closeAdvanceModal() { document.getElementById('advanceModal').style.display = 'none'; hidePage(); }
+function applyAdvanceSelection() { closeAdvanceModal(); hidePage(); }
+
+function shareResult(time, A, B, C) { let text = `*GOLDWIN 3D RESULT*\nTime: ${time}\nA: ${A}\nB: ${B}\nC: ${C}`; if(navigator.share) navigator.share({title: 'Result', text: text}); else window.open(`https://wa.me/?text=${encodeURIComponent(text)}`); }
+function share2DResult(time, D) { let text = `*GOLDWIN 2D RESULT*\nTime: ${time}\n`; let dObj = JSON.parse(D.replace(/&quot;/g, '"')); for(let k in dObj) { text += `${k}: ${dObj[k]}\n`; } if(navigator.share) navigator.share({title: '2D Result', text: text}); else window.open(`https://wa.me/?text=${encodeURIComponent(text)}`); }
+
+function renderAdvanceModalList() { renderAdvancePage(); } 
+function toggleAdvanceTime(date,time){const idx=selectedAdvanceTimes.findIndex(t=>t.date===date&&normalizeTimeString(t.time)===normalizeTimeString(time));if(idx>-1)selectedAdvanceTimes.splice(idx,1);else selectedAdvanceTimes.push({date:date,time:normalizeTimeString(time)});renderAdvancePage();updateAdvanceBanner();updateGrandTotal();}
+function clearAdvanceTimes(){selectedAdvanceTimes=[];updateAdvanceBanner();updateGrandTotal();if(document.getElementById('advanceModal').style.display==='flex')renderAdvancePage();}
+function updateAdvanceBanner(){const b=document.getElementById('adv-banner');const txt=document.getElementById('selected-adv-time-text');if(selectedAdvanceTimes.length>0){b.style.display='block';txt.innerText=selectedAdvanceTimes.length+' Draws Selected';}else{b.style.display='none';}}
+
+function promptAutoSelect(){
+    const c = parseInt(document.getElementById('draw-count-input').value);
+    if(!c || c < 1 || c > 61) return;
+    
+    selectedAdvanceTimes = [];
+    const now = new Date();
+    let startT = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0);
+    
+    if (now > startT) {
+        let minutes = now.getMinutes(); let remainder = minutes % 15;
+        if (remainder !== 0) { startT = new Date(now.getTime() + (15 - remainder) * 60000); } 
+        else { startT = new Date(now.getTime() + 15 * 60000); }
+        startT.setSeconds(0, 0);
+    }
+    if (now.getHours() >= 23) { startT = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 8, 0, 0); }
+    let endT = new Date(startT.getFullYear(), startT.getMonth(), startT.getDate(), 23, 0, 0);
+    
+    let added = 0;
+    for(let t = new Date(startT); t.getTime() <= endT.getTime() && added < c; t.setMinutes(t.getMinutes()+15)) {
+        const h = t.getHours(), m = t.getMinutes(); const ap = h >= 12 ? 'PM' : 'AM'; const dh = h > 12 ? h - 12 : (h === 0 ? 12 : h);
+        const timeStr = normalizeTimeString(`${dh<10?'0'+dh:dh}:${m<10?'0'+m:m} ${ap}`);
+        selectedAdvanceTimes.push({date: getLocalDateStr(t), time: timeStr}); added++;
+    }
+    renderAdvancePage(); updateAdvanceBanner(); updateGrandTotal();
+}
+function confirmAdvanceSelection(){hidePage();}
+</script>
+  <!-- ========================================== -->
+<!-- 1. HTML UI (Buttons and Result Box) -->
+<!-- ========================================== -->
+<div style="padding: 15px; font-family: Arial; max-width: 600px; margin: auto; border: 1px solid #ccc; border-radius: 8px; background: #fff; margin-top: 20px;"><div style="padding: 15px; font-family: Arial; display: none !important;">
+    <h3 style="color: #333; margin-top: 0;">Goldwin Admin Result Panel</h3>
+    
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+        <button onclick="runGame('3D')" style="padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Generate 3D</button>
+        <button onclick="runGame('2D-10')" style="padding: 10px 15px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Generate 2D 10</button>
+        <button onclick="runGame('2D-30')" style="padding: 10px 15px; background: #ffc107; color: black; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Generate 2D 30</button>
+        <button onclick="runGame('2D-50')" style="padding: 10px 15px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">Generate 2D 50</button>
+    </div>
+    
+    <!-- Result Box -->
+    <div id="result-box" style="display: none; padding: 15px; border: 2px solid #333; background: #f9f9f9; border-radius: 8px; line-height: 1.6;"></div>
+</div>
+
+<!-- ========================================== -->
+<!-- 2. FIREBASE SETUP (Module) -->
+<!-- ========================================== -->
+<script type="module">
+    // Firebase SDK Imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // ⚠️ YAHAN APNA FIREBASE CONFIG DAALEIN ⚠️
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Global functions banayein taaki normal script access kar sake
+    window.firebaseDB = db;
+    window.firebaseGetDocs = getDocs;
+    window.firebaseCollection = collection;
+    window.firebaseDoc = doc;
+    window.firebaseSetDoc = setDoc;
+</script>
+
+<!-- ========================================== -->
+<!-- 3. GAME LOGIC (No-Loss + Real Data) -->
+<!-- ========================================== -->
+<script>
+    // Apne Multipliers Yahan Set Karein
+    const MULTIPLIERS = {
+        '3D': 500,     
+        '2D-10': 90,   
+        '2D-30': 90,   
+        '2D-50': 90    
+    };
+
+    async function runGame(gameType) {
+        const resultBox = document.getElementById('result-box');
+        
+        // Agar Firebase load nahi hua
+        if (!window.firebaseDB) {
+            resultBox.style.display = 'block';
+            resultBox.innerHTML = `<p style="color: red; font-weight: bold;">Error: Firebase load nahi hua. Check your internet or config.</p>`;
+            return;
+        }
+
+        resultBox.style.display = 'block';
+        resultBox.innerHTML = `<p style="color: blue; font-weight: bold;">⏳ Firebase se real data fetch ho raha hai... (${gameType})</p>`;
+
+        let tickets = [];
+        try {
+            // Database Structure: bets -> {gameType} -> tickets -> {documents}
+            const querySnapshot = await window.firebaseGetDocs(window.firebaseCollection(window.firebaseDB, "bets", gameType, "tickets"));
+            
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                // Dhyan rakhein: Database me amount number format me ho
+                tickets.push({ num: data.number.toString(), amt: Number(data.amount) });
+            });
+        } catch (error) {
+            console.error("Firebase Error: ", error);
+            resultBox.innerHTML = `<p style="color: red; font-weight: bold;">Database connect fail! Firestore Rules check karein ya config galat hai.</p>`;
+            return;
+        }
+
+        if (tickets.length === 0) {
+            resultBox.innerHTML = `<p style="color: red; font-weight: bold;">Is game (${gameType}) me abhi koi ticket/bet nahi hai!</p>`;
+            return;
+        }
+
+        // --- 100% NO-LOSS LOGIC START ---
+        const fixedMultiplier = MULTIPLIERS[gameType];
+        let totalBets = 0;
+        tickets.forEach(t => { totalBets += t.amt; });
+
+        const targetHouseProfit = totalBets * 0.40;
+        const maxAllowedPayout = totalBets * 0.60; // 60% limit
+
+        let betMap = {};
+        tickets.forEach(t => { betMap[t.num] = (betMap[t.num] || 0) + t.amt; });
+
+        let safeNumbers = [];
+        let lowestPayout = Infinity;
+        let lowestPayoutNumber = "";
+        let lowestPayoutBet = 0;
+
+        let limit = (gameType === '3D') ? 1000 : 100;
+        let padding = (gameType === '3D') ? 3 : 2;
+
+        for (let i = 0; i < limit; i++) {
+            let numStr = i.toString().padStart(padding, '0');
+            let betOnThisNum = betMap[numStr] || 0;
+            let potentialPayout = betOnThisNum * fixedMultiplier;
+
+            // Sabse kam payout wala number track karein (Fallback ke liye)
+            if (potentialPayout < lowestPayout) {
+                lowestPayout = potentialPayout;
+                lowestPayoutNumber = numStr;
+                lowestPayoutBet = betOnThisNum;
+            }
+
+            // Safe numbers (jisme 60% limit cross na ho)
+            if (potentialPayout <= maxAllowedPayout) {
+                safeNumbers.push({ num: numStr, bet: betOnThisNum, payout: potentialPayout });
+            }
+        }
+
+        let winnerNum = "";
+        let winnerBet = 0;
+        let actualPayout = 0;
+        let finalMultiplierUsed = fixedMultiplier;
+        let isAdjusted = false;
+
+        if (safeNumbers.length > 0) {
+            // Best Case: Safe numbers me se randomly kisi ek ko chunein
+            let randomPick = safeNumbers[Math.floor(Math.random() * safeNumbers.length)];
+            winnerNum = randomPick.num;
+            winnerBet = randomPick.bet;
+            actualPayout = randomPick.payout;
+        } else {
+            // Danger Case: Koi safe number nahi hai.
+            // Sabse kam payout wala number chunein, aur payout ko 60% par CAP kar dein.
+            winnerNum = lowestPayoutNumber;
+            winnerBet = lowestPayoutBet;
+            actualPayout = Math.min(lowestPayout, maxAllowedPayout); 
+            finalMultiplierUsed = winnerBet > 0 ? (actualPayout / winnerBet) : 0;
+            isAdjusted = true;
+        }
+
+        const finalHouseProfit = totalBets - actualPayout;
+
+        // Result Save Firebase
+        try {
+            await window.firebaseSetDoc(window.firebaseDoc(window.firebaseDB, "results", gameType), {
+                winningNumber: winnerNum,
+                totalCollection: totalBets,
+                payoutGiven: actualPayout,
+                houseProfit: finalHouseProfit,
+                timestamp: new Date().toISOString()
+            });
+            console.log("Result successfully saved to Firebase!");
+        } catch (error) {
+            console.error("Result save error: ", error);
+        }
+
+        // UI Display
+        let warningHTML = isAdjusted ? `
+            <div style="background: #ffeeba; color: #856404; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-size: 14px; border-left: 4px solid #ffc107;">
+                <strong>⚠️ Alert:</strong> Kisi ek number pe bahut zyada bet thi. 40% profit maintain karne ke liye payout rate ko adjust kiya gaya hai.
+            </div>
+        ` : "";
+
+        resultBox.innerHTML = `
+            <h3 style="margin-top:0; color: #333;">Game: ${gameType} (Real Data)</h3>
+            ${warningHTML}
+            <p><strong>Total Collection:</strong> ${totalBets} Points</p>
+            <p><strong>Target House Profit (40%):</strong> ${targetHouseProfit.toFixed(2)} Points</p>
+            <p><strong>Max Payout Limit (60%):</strong> ${maxAllowedPayout.toFixed(2)} Points</p>
+            <hr style="border: 0; border-top: 1px solid #ccc;">
+            <h2 style="color: #28a745; text-align: center; font-size: 32px; margin: 10px 0;">Winner: ${winnerNum}</h2>
+            <p><strong>Bets on this number:</strong> ${winnerBet} Points</p>
+            <p><strong>Total Payout Given:</strong> ${actualPayout.toFixed(2)} Points</p>
+            ${isAdjusted ? `<p><strong>Adjusted Payout Rate:</strong> ${finalMultiplierUsed.toFixed(2)}x (Original: ${fixedMultiplier}x)</p>` : ''}
+            <hr style="border: 0; border-top: 1px solid #ccc;">
+            <h3 style="color: #007bff; margin-bottom: 0;">Actual House Profit: ${finalHouseProfit.toFixed(2)} Points</h3>
+        `;
+    }
+  // Auto Result Generator (Har 15 Minute Mein)
+</script>
+  <!-- Firebase Live Result Code -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  // ⚠️ यहाँ अपना Firebase Console वाला असली कॉन्फ़िगरेशन डालें
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // ⚠️ यहाँ अपना सही Collection और Document का नाम डालें
+  // जैसे: अगर डेटाबेस में "game" के अंदर "result" है, तो doc(db, "game", "result") लिखें
+  const resultRef = doc(db, "results", "currentDraw"); 
+
+  // यह लाइव लिसनर है जो अपने आप रिजल्ट अपडेट करेगा
+  onSnapshot(resultRef, (docSnap) => {
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      console.log("लाइव रिजल्ट आया:", data);
+      
+      // ⚠️ यहाँ अपनी HTML की उस ID का नाम डालें जहाँ रिजल्ट दिखाना है
+      // उदाहरण के लिए अगर आपका <div id="live-result"> है, तो नीचे वाली लाइन से # हटा दें:
+      
+      // document.getElementById("live-result").innerText = data.winningNumber; 
+    } else {
+      console.log("डेटाबेस में यह डॉक्यूमेंट नहीं मिला!");
+    }
+  });
+</script>
+    <!-- Firebase Live Result & User Balance Code -->
+  <script type="module">
+    // 1. Saari Imports ek jagah
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    // 2. Aapka Firebase Config (Yahan apna asli config dalna)
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT_ID",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // ==========================================
+    // PART 1: LIVE RESULT (Bina admin panel khole result aayega)
+    // ==========================================
+    // Yahan apna sahi collection aur document ka naam dalna
+    const resultRef = doc(db, "results", "currentDraw"); 
+    onSnapshot(resultRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        console.log("Live Result:", data);
+        
+        // Result dikhane wali HTML ID (agar hai to // hata dein)
+        // document.getElementById("live-result").innerText = data.winningNumber; 
+      }
+    });
+
+    // ==========================================
+    // PART 2: USER LOGIN AUR BALANCE (2-3 baar login ki problem fix)
+    // ==========================================
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // Jab user login ho
+        console.log("User Logged In:", user.uid);
+        
+        // User ke document ka reference
+        const userDocRef = doc(db, "users", user.uid);
+        
+        // Live balance listener
+        onSnapshot(userDocRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const userData = docSnap.data();
+            
+            // ⚠️ Yahan apni HTML ki ID dalen jahan balance dikhta hai
+            const balanceElement = document.getElementById("user-balance"); 
+            
+            if (balanceElement) {
+              // Agar database me balance nahi hai to 0 dikhega
+              balanceElement.innerText = userData.balance || 0; 
+            }
+            
+          } else {
+            console.log("User ka data database me nahi mila!");
+          }
+        });
+
+      } else {
+        // Jab user logout ho
+        console.log("User Logged Out");
+        const balanceElement = document.getElementById("user-balance");
+        if (balanceElement) {
+          balanceElement.innerText = "0";
+        }
+      }
+    });
+  </script>
+</body>
+</html>
