@@ -754,25 +754,163 @@ async function forceGenerateMissingResults() {
     } catch (e) { status.innerText = "Error: " + e.message; status.style.color = "red"; }
 }
 
-async function loadUserActivity(){
-    const list=document.getElementById('admin-activity-list'); list.innerHTML="Loading...";
-    try{
-        if(Object.keys(adminUsersCache).length===0){
-            const usersSnapshot=await db.collection("users").get();
-            usersSnapshot.forEach(doc=>{adminUsersCache[doc.id]=doc.data().email;});
+
+window.adminActivityByUser = {};
+
+async function loadUserActivity() {
+    const list = document.getElementById('admin-activity-list');
+    list.innerHTML = "Loading...";
+
+    try {
+        if (Object.keys(adminUsersCache).length === 0) {
+            const usersSnapshot = await db.collection("users").get();
+            usersSnapshot.forEach(doc => {
+                adminUsersCache[doc.id] = doc.data().email || doc.id;
+            });
         }
-        const startOfToday = new Date(); startOfToday.setHours(0,0,0,0);
-        const startTimestamp = firebase.firestore.Timestamp.fromDate(startOfToday);
-        const ticketsSnapshot=await db.collection("tickets").where("createdAt", ">=", startTimestamp).orderBy("createdAt","desc").get();
-        let html='';
-        ticketsSnapshot.forEach(doc=>{
-            const t=doc.data(); const email=adminUsersCache[t.userId]||t.userId.substring(0,8); const typeStr=t.is2D?'2D':`${t.panel}-${t.type}`;
-            const betTime = t.createdAt ? t.createdAt.toDate().toLocaleString('en-GB') : t.timestamp; const targetDraw = `${t.advanceDate || ''} ${normalizeTimeString(t.advanceTime) || ''}`.trim();
-            html+=`<div class="admin-user-card" style="padding: 10px; border-bottom: 1px solid #444;"><div style="display:flex; justify-content:space-between; color:#C5A059; font-size:12px; margin-bottom:5px;"><strong>${email}</strong><span>Placed: ${betTime}</span></div><div style="display:flex; justify-content:space-between; margin-top:5px;"><span>Bet: <strong>${t.number}</strong> (${typeStr})</span><span style="color:#4caf50">${t.totalCost} pts</span></div><div style="font-size:11px; color:#ff9800; margin-top:5px; font-weight:bold; background:#1e1e2f; padding:4px; border-radius:4px; display:inline-block;">Target Draw: ${targetDraw}</div></div>`;
+
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+
+        const startTimestamp =
+            firebase.firestore.Timestamp.fromDate(startOfToday);
+
+        const ticketsSnapshot = await db.collection("tickets")
+            .where("createdAt", ">=", startTimestamp)
+            .orderBy("createdAt", "desc")
+            .get();
+
+        const grouped = {};
+
+        ticketsSnapshot.forEach(doc => {
+            const t = doc.data();
+            const uid = t.userId;
+            if (!uid) return;
+
+            if (!grouped[uid]) grouped[uid] = [];
+
+            grouped[uid].push({
+                ...t,
+                ticketId: doc.id
+            });
         });
-        list.innerHTML=html||"<div style='text-align:center; padding:15px;'>Aaj ke liye koi activity nahi hai.</div>";
-    }catch(e){ list.innerHTML="Error loading activity"; }
+
+        window.adminActivityByUser = grouped;
+
+        let html = '';
+
+        Object.keys(grouped).forEach(uid => {
+            const tickets = grouped[uid];
+            const email = adminUsersCache[uid] || uid;
+            const total = tickets.reduce(
+                (sum, t) => sum + Number(t.totalCost || 0), 0
+            );
+
+            const safeEmail = String(email).replace(/[&<>"']/g, c => ({
+                '&':'&amp;',
+                '<':'&lt;',
+                '>':'&gt;',
+                '"':'&quot;',
+                "'":'&#39;'
+            }[c]));
+
+            html += `
+            <div class="admin-user-card"
+                 style="padding:12px; margin-bottom:10px;
+                 background:#1e1e2f; border-radius:8px;">
+
+                <div style="color:#C5A059;font-weight:bold;">
+                    ${safeEmail}
+                </div>
+
+                <div style="color:#fff;font-size:12px;margin-top:6px;">
+                    Total Bets: ${tickets.length}
+                </div>
+
+                <div style="color:#4caf50;font-weight:bold;margin-top:5px;">
+                    Total Points: ${total}
+                </div>
+
+                <button
+                    onclick="toggleAdminUserActivity('${uid}')"
+                    style="width:100%;margin-top:10px;padding:9px;
+                    background:#C5A059;color:#000;border:0;
+                    border-radius:5px;font-weight:bold;">
+                    VIEW ACTIVITY
+                </button>
+
+                <div id="admin-user-activity-${uid}"
+                     style="display:none;margin-top:10px;">
+                </div>
+            </div>`;
+        });
+
+        list.innerHTML = html ||
+            "<div style='text-align:center;padding:15px;'>Aaj koi activity nahi hai.</div>";
+
+    } catch(e) {
+        console.error(e);
+        list.innerHTML = "Error loading activity: " + e.message;
+    }
 }
+
+function toggleAdminUserActivity(uid) {
+    const box = document.getElementById(
+        'admin-user-activity-' + uid
+    );
+
+    if (!box) return;
+
+    if (box.style.display === 'block') {
+        box.style.display = 'none';
+        return;
+    }
+
+    const tickets = window.adminActivityByUser[uid] || [];
+
+    let html = '';
+
+    tickets.forEach(t => {
+        const typeStr = t.is2D
+            ? '2D'
+            : `${t.panel}-${t.type}`;
+
+        const betTime = t.createdAt && t.createdAt.toDate
+            ? t.createdAt.toDate().toLocaleString('en-GB')
+            : (t.timestamp || '');
+
+        const targetDraw =
+            `${t.advanceDate || ''} ${
+                normalizeTimeString(t.advanceTime) || ''
+            }`.trim();
+
+        html += `
+        <div style="padding:10px;margin-bottom:7px;
+             background:#292940;border-radius:5px;color:white;">
+
+            <div style="color:#C5A059;font-size:12px;">
+                Placed: ${betTime}
+            </div>
+
+            <div style="margin-top:5px;">
+                Bet: <b>${t.number}</b> (${typeStr})
+            </div>
+
+            <div style="color:#4caf50;margin-top:5px;">
+                ${t.totalCost || 0} Points
+            </div>
+
+            <div style="color:#ff9800;font-size:11px;margin-top:5px;">
+                Target Draw: ${targetDraw}
+            </div>
+
+        </div>`;
+    });
+
+    box.innerHTML = html;
+    box.style.display = 'block';
+}
+
 
 async function loadAdminRetailers() {
     const list = document.getElementById('admin-retailers-list'); const fromDateStr = document.getElementById('comm-from').value; const toDateStr = document.getElementById('comm-to').value;
