@@ -432,10 +432,10 @@ body{background:#f0f0f0;font-size:12px;padding-bottom:150px;overflow-x:hidden}
                 <p class="admin-text-small" style="margin-bottom:15px;">Agar aap auto result OFF karenge, toh system khud se result nahi banayega. Aap niche se manual result daal sakte hain.</p>
             </div>
             <div class="admin-card">
-                <h3 style="margin-bottom:10px;">Risky Numbers (Next Draw)</h3>
-                <div id="admin-risky-list" style="background:#1e1e2f; padding:10px; border-radius:5px; max-height:200px; overflow-y:auto;">
-                    <div style="text-align:center;">Loading...</div>
-                </div>
+    <h3 style="margin-bottom:10px;">Latest Firebase Result</h3>
+    <div id="firebase-latest-result" style="padding:12px;color:#C5A059;">
+        Firebase result loading...
+    </div>
             </div>
             <div class="admin-card">
                 <h3 style="margin-bottom:10px;">Add/Edit Manual Result</h3>
@@ -1108,7 +1108,20 @@ function initUserData(){
 }
 
 async function checkAndGenerateMissingResults(){
-  if (!isAutoResultOn) return; 
+
+  try {
+    const settingsDoc = await db.collection("settings").doc("game").get();
+
+    isAutoResultOn = settingsDoc.exists
+      ? settingsDoc.data().autoResult !== false
+      : true;
+
+  } catch(e) {
+    console.error("Auto Result setting error:", e);
+    return;
+  }
+
+  if (!isAutoResultOn) return;
   const now = new Date(); 
   if (now.getHours() < 8) return;
   try {
@@ -1793,7 +1806,8 @@ function confirmAdvanceSelection(){hidePage();}
   <!-- ========================================== -->
 <!-- 1. HTML UI (Buttons and Result Box) -->
 <!-- ========================================== -->
-<div style="padding: 15px; font-family: Arial; max-width: 600px; margin: auto; border: 1px solid #ccc; border-radius: 8px; background: #fff; margin-top: 20px;"><div style="padding: 15px; font-family: Arial; display: none !important;">
+<div style="padding: 15px; font-family: Arial; max-width: 600px; margin: auto; border: 1px solid #ccc; border-radius: 8px; background: #fff; margin-top: 20px;">
+<div style="padding: 15px; font-family: Arial; display: none !important;">
     <h3 style="color: #333; margin-top: 0;">Goldwin Admin Result Panel</h3>
     
     <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
@@ -1805,7 +1819,7 @@ function confirmAdvanceSelection(){hidePage();}
     
     <!-- Result Box -->
     <div id="result-box" style="display: none; padding: 15px; border: 2px solid #333; background: #f9f9f9; border-radius: 8px; line-height: 1.6;"></div>
-</div>
+</>
 
 <!-- ========================================== -->
 <!-- 2. FIREBASE SETUP (Module) -->
@@ -1816,14 +1830,16 @@ function confirmAdvanceSelection(){hidePage();}
     import { getFirestore, collection, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     // ⚠️ YAHAN APNA FIREBASE CONFIG DAALEIN ⚠️
-    const firebaseConfig = {
-        apiKey: "YOUR_API_KEY",
-        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-        projectId: "YOUR_PROJECT_ID",
-        storageBucket: "YOUR_PROJECT_ID.appspot.com",
-        messagingSenderId: "YOUR_SENDER_ID",
-        appId: "YOUR_APP_ID"
-    };
+     // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDa78mzNYIRoSvE87DPjQoYfilXpaVtq_s",
+  authDomain: "goldwin-game.firebaseapp.com",
+  projectId: "goldwin-game",
+  storageBucket: "goldwin-game.firebasestorage.app",
+  messagingSenderId: "701795459428",
+  appId: "1:701795459428:web:f3a0463462ef6ea8df5a71",
+  measurementId: "G-K2320ZN1QX"
+};
 
     // Initialize Firebase
     const app = initializeApp(firebaseConfig);
@@ -1849,142 +1865,76 @@ function confirmAdvanceSelection(){hidePage();}
         '2D-50': 90    
     };
 
-    async function runGame(gameType) {
-        const resultBox = document.getElementById('result-box');
-        
-        // Agar Firebase load nahi hua
-        if (!window.firebaseDB) {
-            resultBox.style.display = 'block';
-            resultBox.innerHTML = `<p style="color: red; font-weight: bold;">Error: Firebase load nahi hua. Check your internet or config.</p>`;
-            return;
-        }
 
-        resultBox.style.display = 'block';
-        resultBox.innerHTML = `<p style="color: blue; font-weight: bold;">⏳ Firebase se real data fetch ho raha hai... (${gameType})</p>`;
+async function runGame(gameType) {
+    const resultBox = document.getElementById('result-box');
 
-        let tickets = [];
-        try {
-            // Database Structure: bets -> {gameType} -> tickets -> {documents}
-            const querySnapshot = await window.firebaseGetDocs(window.firebaseCollection(window.firebaseDB, "bets", gameType, "tickets"));
-            
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                // Dhyan rakhein: Database me amount number format me ho
-                tickets.push({ num: data.number.toString(), amt: Number(data.amount) });
-            });
-        } catch (error) {
-            console.error("Firebase Error: ", error);
-            resultBox.innerHTML = `<p style="color: red; font-weight: bold;">Database connect fail! Firestore Rules check karein ya config galat hai.</p>`;
-            return;
-        }
+    resultBox.style.display = 'block';
+    resultBox.innerHTML = '⏳ Firebase se existing result load ho raha hai...';
 
-        if (tickets.length === 0) {
-            resultBox.innerHTML = `<p style="color: red; font-weight: bold;">Is game (${gameType}) me abhi koi ticket/bet nahi hai!</p>`;
-            return;
-        }
+    if (!window.firebaseDB) {
+        resultBox.innerHTML = 'Firebase connection nahi mila.';
+        return;
+    }
 
-        // --- 100% NO-LOSS LOGIC START ---
-        const fixedMultiplier = MULTIPLIERS[gameType];
-        let totalBets = 0;
-        tickets.forEach(t => { totalBets += t.amt; });
+    try {
+        const snapshot = await window.firebaseGetDocs(
+            window.firebaseCollection(window.firebaseDB, "results")
+        );
 
-        const targetHouseProfit = totalBets * 0.40;
-        const maxAllowedPayout = totalBets * 0.60; // 60% limit
+        // Sirf main generator ke A/B/C/D wale results
+        const results = [];
 
-        let betMap = {};
-        tickets.forEach(t => { betMap[t.num] = (betMap[t.num] || 0) + t.amt; });
+        snapshot.forEach((document) => {
+            const data = document.data();
 
-        let safeNumbers = [];
-        let lowestPayout = Infinity;
-        let lowestPayoutNumber = "";
-        let lowestPayoutBet = 0;
-
-        let limit = (gameType === '3D') ? 1000 : 100;
-        let padding = (gameType === '3D') ? 3 : 2;
-
-        for (let i = 0; i < limit; i++) {
-            let numStr = i.toString().padStart(padding, '0');
-            let betOnThisNum = betMap[numStr] || 0;
-            let potentialPayout = betOnThisNum * fixedMultiplier;
-
-            // Sabse kam payout wala number track karein (Fallback ke liye)
-            if (potentialPayout < lowestPayout) {
-                lowestPayout = potentialPayout;
-                lowestPayoutNumber = numStr;
-                lowestPayoutBet = betOnThisNum;
+            if (data && (data.A || data.B || data.C || data.D)) {
+                results.push(data);
             }
+        });
 
-            // Safe numbers (jisme 60% limit cross na ho)
-            if (potentialPayout <= maxAllowedPayout) {
-                safeNumbers.push({ num: numStr, bet: betOnThisNum, payout: potentialPayout });
-            }
+        if (results.length === 0) {
+            resultBox.innerHTML = 'Firebase mein main game ka result nahi mila.';
+            return;
         }
 
-        let winnerNum = "";
-        let winnerBet = 0;
-        let actualPayout = 0;
-        let finalMultiplierUsed = fixedMultiplier;
-        let isAdjusted = false;
+        // Sabse naya result
+        results.sort((a, b) => {
+            const timeA = a.timestamp && a.timestamp.toMillis
+                ? a.timestamp.toMillis() : 0;
+            const timeB = b.timestamp && b.timestamp.toMillis
+                ? b.timestamp.toMillis() : 0;
+            return timeB - timeA;
+        });
 
-        if (safeNumbers.length > 0) {
-            // Best Case: Safe numbers me se randomly kisi ek ko chunein
-            let randomPick = safeNumbers[Math.floor(Math.random() * safeNumbers.length)];
-            winnerNum = randomPick.num;
-            winnerBet = randomPick.bet;
-            actualPayout = randomPick.payout;
-        } else {
-            // Danger Case: Koi safe number nahi hai.
-            // Sabse kam payout wala number chunein, aur payout ko 60% par CAP kar dein.
-            winnerNum = lowestPayoutNumber;
-            winnerBet = lowestPayoutBet;
-            actualPayout = Math.min(lowestPayout, maxAllowedPayout); 
-            finalMultiplierUsed = winnerBet > 0 ? (actualPayout / winnerBet) : 0;
-            isAdjusted = true;
-        }
-
-        const finalHouseProfit = totalBets - actualPayout;
-
-        // Result Save Firebase
-        try {
-            await window.firebaseSetDoc(window.firebaseDoc(window.firebaseDB, "results", gameType), {
-                winningNumber: winnerNum,
-                totalCollection: totalBets,
-                payoutGiven: actualPayout,
-                houseProfit: finalHouseProfit,
-                timestamp: new Date().toISOString()
-            });
-            console.log("Result successfully saved to Firebase!");
-        } catch (error) {
-            console.error("Result save error: ", error);
-        }
-
-        // UI Display
-        let warningHTML = isAdjusted ? `
-            <div style="background: #ffeeba; color: #856404; padding: 10px; border-radius: 5px; margin-bottom: 10px; font-size: 14px; border-left: 4px solid #ffc107;">
-                <strong>⚠️ Alert:</strong> Kisi ek number pe bahut zyada bet thi. 40% profit maintain karne ke liye payout rate ko adjust kiya gaya hai.
-            </div>
-        ` : "";
+        const latest = results[0];
 
         resultBox.innerHTML = `
-            <h3 style="margin-top:0; color: #333;">Game: ${gameType} (Real Data)</h3>
-            ${warningHTML}
-            <p><strong>Total Collection:</strong> ${totalBets} Points</p>
-            <p><strong>Target House Profit (40%):</strong> ${targetHouseProfit.toFixed(2)} Points</p>
-            <p><strong>Max Payout Limit (60%):</strong> ${maxAllowedPayout.toFixed(2)} Points</p>
-            <hr style="border: 0; border-top: 1px solid #ccc;">
-            <h2 style="color: #28a745; text-align: center; font-size: 32px; margin: 10px 0;">Winner: ${winnerNum}</h2>
-            <p><strong>Bets on this number:</strong> ${winnerBet} Points</p>
-            <p><strong>Total Payout Given:</strong> ${actualPayout.toFixed(2)} Points</p>
-            ${isAdjusted ? `<p><strong>Adjusted Payout Rate:</strong> ${finalMultiplierUsed.toFixed(2)}x (Original: ${fixedMultiplier}x)</p>` : ''}
-            <hr style="border: 0; border-top: 1px solid #ccc;">
-            <h3 style="color: #007bff; margin-bottom: 0;">Actual House Profit: ${finalHouseProfit.toFixed(2)} Points</h3>
+            <h3>Firebase Existing Result</h3>
+            <p><b>Date:</b> ${latest.date || '-'}</p>
+            <p><b>Time:</b> ${latest.time || '-'}</p>
+            <pre style="white-space:pre-wrap;color:green;">
+${JSON.stringify({
+    A: latest.A,
+    B: latest.B,
+    C: latest.C,
+    D: latest.D
+}, null, 2)}
+            </pre>
+            <p>Result Firebase se read hua hai. Naya result generate nahi hua.</p>
         `;
+
+    } catch (error) {
+        console.error(error);
+        resultBox.innerHTML = 'Firebase result read karne mein error: ' + error.message;
     }
+}
+
   // Auto Result Generator (Har 15 Minute Mein)
 </script>
   <!-- Firebase Live Result Code -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   // ⚠️ यहाँ अपना Firebase Console वाला असली कॉन्फ़िगरेशन डालें
@@ -2022,38 +1972,74 @@ function confirmAdvanceSelection(){hidePage();}
     <!-- Firebase Live Result & User Balance Code -->
   <script type="module">
     // 1. Saari Imports ek jagah
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
     // 2. Aapka Firebase Config (Yahan apna asli config dalna)
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
+    // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDa78mzNYIRoSvE87DPjQoYfilXpaVtq_s",
+  authDomain: "goldwin-game.firebaseapp.com",
+  projectId: "goldwin-game",
+  storageBucket: "goldwin-game.firebasestorage.app",
+  messagingSenderId: "701795459428",
+  appId: "1:701795459428:web:f3a0463462ef6ea8df5a71",
+  measurementId: "G-K2320ZN1QX"
+};
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+const app = getApp();
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-    // ==========================================
-    // PART 1: LIVE RESULT (Bina admin panel khole result aayega)
-    // ==========================================
-    // Yahan apna sahi collection aur document ka naam dalna
-    const resultRef = doc(db, "results", "currentDraw"); 
-    onSnapshot(resultRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        console.log("Live Result:", data);
-        
-        // Result dikhane wali HTML ID (agar hai to // hata dein)
-        // document.getElementById("live-result").innerText = data.winningNumber; 
-      }
+// ==========================================
+// PART 1: FIREBASE LATEST RESULT
+// ==========================================
+
+onSnapshot(collection(db, "results"), (snapshot) => {
+    const resultBox = document.getElementById("firebase-latest-result");
+
+    if (!resultBox) return;
+
+    const results = [];
+
+    snapshot.forEach((resultDoc) => {
+        const data = resultDoc.data();
+
+        if (data && (data.A || data.B || data.C || data.D)) {
+            results.push(data);
+        }
     });
+
+    if (results.length === 0) {
+        resultBox.innerHTML = "Abhi Firebase mein koi result nahi mila.";
+        return;
+    }
+
+    results.sort((a, b) => {
+        const timeA = a.timestamp?.toMillis
+            ? a.timestamp.toMillis()
+            : Date.parse((a.date || "") + " " + (a.time || "")) || 0;
+
+        const timeB = b.timestamp?.toMillis
+            ? b.timestamp.toMillis()
+            : Date.parse((b.date || "") + " " + (b.time || "")) || 0;
+
+        return timeB - timeA;
+    });
+
+    const latest = results[0];
+
+    resultBox.style.display = "block";
+    resultBox.innerHTML = `
+        <h3>Latest Firebase Result</h3>
+        <p>A: ${latest.A ?? "-"}</p>
+        <p>B: ${latest.B ?? "-"}</p>
+        <p>C: ${latest.C ?? "-"}</p>
+        <p>D: ${JSON.stringify(latest.D ?? {})}</p>
+        <small>${latest.date ?? ""} ${latest.time ?? ""}</small>
+    `;
+});
 
     // ==========================================
     // PART 2: USER LOGIN AUR BALANCE (2-3 baar login ki problem fix)
