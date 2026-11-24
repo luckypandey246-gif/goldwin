@@ -1471,34 +1471,59 @@ function renderReprint(){
             } 
         });
 
-        let claimBtnHTML = '';
-        if (hasWinning && hasUnclaimed) { 
-            claimBtnHTML = `<button class="claim-btn" onclick="claimTicket('${g.id}')">💰 CLAIM ₹${unclaimedWin}</button>`; 
-        } else if (hasWinning) { 
-            claimBtnHTML = `<span class="claimed">✔ CLAIMED</span>`; 
-        } else { 
-            claimBtnHTML = `<span class="not-win">Not Won</span>`; 
-        }
+        
+const allResultsDeclared = g.items.every(i => {
+    const match = resultHistory.find(r =>
+        r.date === i.advanceDate &&
+        r.time === normalizeTimeString(i.advanceTime)
+    );
 
-        let timesArray = Array.from(g.times); timesArray.sort((a,b)=>timeToMinutes(a)-timeToMinutes(b)); let timeDisplay = timesArray.join(', ');
-        if(timesArray.length > 2) { timeDisplay = `${timesArray[0]} to ${timesArray[timesArray.length-1]}`; }
+    if (!match) return false;
 
-        html+=`<div class="reprint-card" style="flex-direction:column; align-items:flex-start; padding:10px;">
-            <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:5px; border-bottom:1px dashed #ccc; padding-bottom:5px;">
-                <span style="font-weight:bold; color:#333;">ID: X${g.id.toString(36).substring(3,8).toUpperCase()}</span>
-                <span style="font-size:11px; color:#777;">${g.time}</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:5px;">
-                <span style="font-size:12px; color:#555;">Draw Times: <b>${timeDisplay}</b></span>
-                <span style="color:#d32f2f; font-weight:bold;">Total: ₹${g.total}</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; width:100%; align-items:center; margin-top:5px;">
-                <button class="view-btn" onclick="viewTicketDetails(${g.id})">👁 VIEW</button>${claimBtnHTML}
-            </div>
-        </div>`;
-    });
-    list.innerHTML=html;
+    if (i.is2D) return !!match.D;
+
+    return String(match[i.panel] || "").length === 3;
+});
+
+
+let claimBtnHTML = '';
+
+if (hasWinning && hasUnclaimed) {
+    claimBtnHTML = `<button class="claim-btn" onclick="claimTicket('${g.id}')">💰 CLAIM ₹${unclaimedWin}</button>`;
+} else if (hasWinning) {
+    claimBtnHTML = `<span class="claimed">✔ CLAIMED</span>`;
+} else if (!allResultsDeclared) {
+    claimBtnHTML = `<span class="not-win">PENDING</span>`;
+} else {
+    claimBtnHTML = `<span class="not-win">Not Won</span>`;
 }
+
+let timesArray = Array.from(g.times);
+timesArray.sort((a,b) => timeToMinutes(a)-timeToMinutes(b));
+let timeDisplay = timesArray.join(', ');
+
+if (timesArray.length > 2) {
+    timeDisplay = `${timesArray[0]} to ${timesArray[timesArray.length-1]}`;
+}
+
+html += `<div class="reprint-card" style="flex-direction:column; align-items:flex-start; padding:10px;">
+    <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:5px; border-bottom:1px dashed #ccc; padding-bottom:5px;">
+        <span style="font-weight:bold; color:#333;">ID: X${g.id.toString(36).substring(3,8).toUpperCase()}</span>
+        <span style="font-size:11px; color:#777;">${g.time}</span>
+    </div>
+    <div style="display:flex; justify-content:space-between; width:100%; margin-bottom:5px;">
+        <span style="font-size:12px; color:#555;">Draw Times: <b>${timeDisplay}</b></span>
+        <span style="color:#d32f2f; font-weight:bold;">Total: ₹${g.total}</span>
+    </div>
+    <div style="display:flex; justify-content:space-between; width:100%; align-items:center; margin-top:5px;">
+        <button class="view-btn" onclick="viewTicketDetails(${g.id})">👁 VIEW</button>${claimBtnHTML}
+    </div>
+</div>`;
+});
+
+list.innerHTML = html;
+}
+
 
 function viewTicketDetails(pId){
     const tGroup = boughtTickets.filter(t => String(t.purchaseId || t.id) === String(pId)); if(!tGroup || tGroup.length===0) return;
@@ -1509,7 +1534,31 @@ function viewTicketDetails(pId){
     document.getElementById('rcpt-id').innerText = idStr; document.getElementById('rcpt-date').innerText = first.timestamp; document.getElementById('rcpt-group').innerText = first.is2D ? '2D Game' : '3D Game'; document.getElementById('rcpt-draw-times').innerHTML = `<span class="receipt-draw-badge">${timeStr}</span>`;
     
     let tbody=''; let totalPts=0;
-    tGroup.forEach(it=>{ const td=it.type==='2D'?'2D':`${it.panel}-${it.type}`; tbody+=`<tr><td>${it.number}</td><td>${td}</td><td>${it.points}</td></tr>`; totalPts+=it.points; });
+    
+
+tGroup.forEach(it => {
+    const td = it.type === '2D' ? '2D' : `${it.panel}-${it.type}`;
+    const winAmount = getClaimedAmount(it);
+
+    const winLabel = winAmount > 0
+        ? `<span style="color:green;font-weight:bold;white-space:nowrap;">WIN ₹${winAmount}</span>`
+        : '';
+
+    tbody += `<tr>
+        <td>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                <span style="font-weight:bold;">${it.number}</span>
+                ${winLabel}
+            </div>
+        </td>
+        <td>${td}</td>
+        <td>${it.points}</td>
+    </tr>`;
+
+    totalPts += it.points;
+});
+
+
     document.getElementById('rcpt-tbody').innerHTML=tbody; document.getElementById('rcpt-total-val').innerText=totalPts;
     document.querySelector('#receipt-modal .receipt-buttons').innerHTML = `<button class="rcpt-btn" onclick="closeReceipt()" style="background:#d32f2f;">CLOSE</button>`;
     document.getElementById('receipt-modal').style.display='flex';
@@ -1653,21 +1702,36 @@ function cancelTicket(pId,amt){
         if(snap.empty)return showCustomAlert("Error","Ticket not found!");
         const batch=db.batch();let totalRefund=0;
         // 👇 TIME CHECK CODE START 👇
-let ticketTime = d.timestamp; 
-if (ticketTime && typeof ticketTime.toDate === 'function') {
-    ticketTime = ticketTime.toDate().getTime(); 
-}
+// TIME CHECK START
+const currentDraw = Math.floor(Date.now() / (15 * 60 * 1000));
 
-if (ticketTime) {
-    let drawDuration = 15 * 60 * 1000; // 15 minutes ka draw
-    let currentDraw = Math.floor(Date.now() / drawDuration);
-    let ticketDraw = Math.floor(ticketTime / drawDuration);
+for (const doc of snap.docs) {
+    const d = doc.data();
 
-    if (currentDraw !== ticketDraw) {
-        alert("❌ Ye ticket cancel nahi ho sakta!\nSirf usi draw ke andar cancel hota hai.");
-        return; // Cancel process yahin ruk jayega
+    if (d.status === 'PENDING') {
+        let ticketTime = d.createdAt;
+
+        if (ticketTime && typeof ticketTime.toDate === 'function') {
+            ticketTime = ticketTime.toDate().getTime();
+        } else if (ticketTime instanceof Date) {
+            ticketTime = ticketTime.getTime();
+        }
+
+        // Timestamp missing ho to cancellation rok do
+        if (!ticketTime || isNaN(ticketTime)) {
+            showCustomAlert("Error", "Ticket time nahi mila. Admin se contact karein.");
+            return;
+        }
+
+        const ticketDraw = Math.floor(ticketTime / (15 * 60 * 1000));
+
+        if (currentDraw !== ticketDraw) {
+            showCustomAlert("Cancel Not Allowed", "Time is over! Ticket can't be cancelled.");
+            return;
+        }
     }
 }
+// TIME CHECK END
 // 👆 TIME CHECK CODE END 👆
 
         snap.forEach(doc=>{const d=doc.data();if(d.status==='PENDING'){batch.delete(doc.ref);totalRefund+=d.totalCost;}});
