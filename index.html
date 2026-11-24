@@ -231,6 +231,18 @@ body{background:#f0f0f0;font-size:12px;padding-bottom:150px;overflow-x:hidden}
 .btn-apply { background: #2e7d32; }
 .btn-cancel { background: #d32f2f; }
 
+#announcement-text {
+    animation: goldwin-scroll 12s linear infinite;
+}
+
+@keyframes goldwin-scroll {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(-100%);
+    }
+}
 </style>
 </head>
 <body>
@@ -292,6 +304,19 @@ body{background:#f0f0f0;font-size:12px;padding-bottom:150px;overflow-x:hidden}
 <div id="main-app" style="display:none;">
 <div class="timer-bar"><span class="timer-label" id="result-text">Next Draw In:</span> <span class="timer-val" id="timer-display">Loading...</span> <span id="last-draw-display" style="margin-left: 10px; font-size: 13px; color: #d32f2f; font-weight: bold; border-left: 2px solid #000; padding-left: 8px; display: inline-block;">Last Draw: --</span></div>
 <div class="adv-banner" id="adv-banner" style="display:none;background:#ffeb3b;color:#000;text-align:center;padding:5px;font-weight:bold;border-bottom:2px solid #fbc02d">Advance Betting: <span id="selected-adv-time-text"></span> <button onclick="clearAdvanceTimes()" style="background:red;color:#fff;border:none;padding:2px 5px;border-radius:3px;font-size:10px;margin-left:5px">Clear All</button></div>
+  <div id="maintenance-screen" style="display:none;background:#fff3f3;color:#d32f2f;text-align:center;padding:25px 10px;font-size:22px;font-weight:bold;border:2px solid #d32f2f;margin:10px;border-radius:8px;">
+    Technical Issue
+    <div style="font-size:16px;margin-top:8px;">Will Be Back Soon</div>
+  </div>
+  
+
+<div id="announcement-bar" style="display:none;background:#fff3cd;color:#b71c1c;padding:8px 0;font-weight:bold;font-size:15px;border-top:1px solid #ffc107;border-bottom:1px solid #ffc107;overflow:hidden;white-space:nowrap;">
+    <div id="announcement-text" style="display:inline-block;padding-left:100%;">
+        Announcement Message
+    </div>
+</div>
+
+
 <div id="header-3d">
 <div class="panels"><div class="panel panel-A">A</div><div class="panel panel-B">B</div><div class="panel panel-C">C</div></div>
 <div class="panel-nums"><div id="res-A">- - -</div><div id="res-B">- - -</div><div id="res-C">- - -</div></div>
@@ -431,6 +456,41 @@ body{background:#f0f0f0;font-size:12px;padding-bottom:150px;overflow-x:hidden}
                 </div>
                 <p class="admin-text-small" style="margin-bottom:15px;">Agar aap auto result OFF karenge, toh system khud se result nahi banayega. Aap niche se manual result daal sakte hain.</p>
             </div>
+          
+<div class="admin-card">
+    <h3 style="margin-bottom:10px;">Scrolling Announcement</h3>
+
+    <textarea id="announcement-input"
+        placeholder="Yahan apna announcement message likho..."
+        style="width:100%;height:80px;padding:10px;box-sizing:border-box;margin-bottom:10px;"></textarea>
+
+    <button class="admin-btn admin-btn-blue"
+        onclick="saveAnnouncement()">
+        SAVE ANNOUNCEMENT
+    </button>
+
+    <button class="admin-btn admin-btn-red"
+        style="margin-top:8px;"
+        onclick="clearAnnouncement()">
+        CLEAR ANNOUNCEMENT
+    </button>
+
+    <p id="announcement-status"
+       style="color:#4caf50;margin-top:10px;"></p>
+</div>
+
+          <div class="admin-card">
+    <h3 style="margin-bottom:10px;">System Control</h3>
+
+    <h4>Maintenance Mode</h4>
+    <p id="maintenance-status" style="color:#4caf50;">GAME STATUS: RUNNING</p>
+    <button id="maintenance-toggle-btn"
+        class="admin-btn admin-btn-red"
+        style="width:auto;padding:8px 15px;"
+        onclick="toggleMaintenanceMode()">
+        TURN MAINTENANCE ON
+    </button>
+          </div>
             <div class="admin-card">
     <h3 style="margin-bottom:10px;">Latest Firebase Result</h3>
     <div id="firebase-latest-result" style="padding:12px;color:#C5A059;">
@@ -646,7 +706,135 @@ function generateAdminTimeOptions() {
     select.innerHTML = html; select.value = getNextDrawTimeString();
 }
 
-async function loadGameSettings(){try{const doc=await db.collection("settings").doc("game").get();if(doc.exists){isAutoResultOn=doc.data().autoResult!==false;}else{isAutoResultOn=true;}updateAutoResultBtnUI();}catch(e){console.log(e);}}
+
+async function loadGameSettings(){
+    try{
+        const doc = await db.collection("settings").doc("game").get();
+        const data = doc.exists ? doc.data() : {};
+
+        isAutoResultOn = data.autoResult !== false;
+        updateAutoResultBtnUI();
+
+        window.isMaintenanceOn = data.maintenanceMode === true;
+        window.currentAnnouncement = data.announcement || "";
+
+        const announcementBar = document.getElementById('announcement-bar');
+        const announcementText = document.getElementById('announcement-text');
+
+        if(announcementBar && announcementText){
+            if(window.currentAnnouncement){
+                announcementText.textContent = window.currentAnnouncement;
+                announcementBar.style.display = "block";
+            }else{
+                announcementBar.style.display = "none";
+            }
+        }
+
+        const status = document.getElementById('maintenance-status');
+        const btn = document.getElementById('maintenance-toggle-btn');
+        const screen = document.getElementById('maintenance-screen');
+        const section3d = document.getElementById('section-3d');
+        const section2d = document.getElementById('section-2d');
+
+        if(status){
+            status.innerText = window.isMaintenanceOn
+                ? "GAME STATUS: MAINTENANCE ON"
+                : "GAME STATUS: RUNNING";
+            status.style.color = window.isMaintenanceOn ? "red" : "#4caf50";
+        }
+
+        if(btn){
+            btn.innerText = window.isMaintenanceOn
+                ? "TURN MAINTENANCE OFF"
+                : "TURN MAINTENANCE ON";
+            btn.className = window.isMaintenanceOn
+                ? "admin-btn admin-btn-green"
+                : "admin-btn admin-btn-red";
+        }
+
+        if(screen){
+            screen.style.display = window.isMaintenanceOn ? "block" : "none";
+        }
+
+        if(section3d){
+            section3d.style.display = window.isMaintenanceOn ? "none" : "";
+        }
+
+        if(section2d){
+            section2d.style.display = window.isMaintenanceOn ? "none" : "";
+        }
+
+    }catch(e){
+        console.log(e);
+    }
+}
+
+async function toggleMaintenanceMode(){
+    const btn = document.getElementById('maintenance-toggle-btn');
+
+    try{
+        if(btn) btn.disabled = true;
+
+        const ref = db.collection("settings").doc("game");
+        const doc = await ref.get();
+        const current = doc.exists && doc.data().maintenanceMode === true;
+
+        await ref.set({
+            maintenanceMode: !current
+        }, {merge:true});
+
+        await loadGameSettings();
+
+        alert(!current
+            ? "Maintenance Mode ON ho gaya!"
+            : "Maintenance Mode OFF ho gaya!");
+
+    }catch(e){
+        alert("Maintenance Error: " + e.message);
+        console.log(e);
+    }finally{
+        if(btn) btn.disabled = false;
+    }
+}
+
+
+async function saveAnnouncement(){
+    const input = document.getElementById('announcement-input');
+    const status = document.getElementById('announcement-status');
+    const message = input.value.trim();
+
+    try{
+        await db.collection("settings").doc("game").set({
+            announcement: message
+        }, {merge:true});
+
+        window.currentAnnouncement = message;
+        status.innerText = "Announcement Saved Successfully!";
+
+    }catch(e){
+        status.innerText = "Error: " + e.message;
+    }
+}
+
+
+async function clearAnnouncement(){
+    const input = document.getElementById('announcement-input');
+    const status = document.getElementById('announcement-status');
+
+    try{
+        await db.collection("settings").doc("game").set({
+            announcement: ""
+        }, {merge:true});
+
+        input.value = "";
+        window.currentAnnouncement = "";
+        status.innerText = "Announcement Cleared!";
+
+    }catch(e){
+        status.innerText = "Error: " + e.message;
+    }
+}
+
 async function toggleAutoResult(){isAutoResultOn=!isAutoResultOn;await db.collection("settings").doc("game").set({autoResult:isAutoResultOn},{merge:true});updateAutoResultBtnUI();}
 function updateAutoResultBtnUI(){const btn=document.getElementById('auto-result-toggle-btn');if(isAutoResultOn){btn.innerText="AUTO RESULT: ON";btn.className="admin-btn admin-btn-green";btn.style.width="auto";btn.style.padding="8px 15px";}else{btn.innerText="AUTO RESULT: OFF";btn.className="admin-btn admin-btn-red";btn.style.width="auto";btn.style.padding="8px 15px";}}
 
