@@ -1224,7 +1224,27 @@ function initUserData(){
     if(document.getElementById('page-reprint').style.display==='block')renderReprint();
     if(document.getElementById('page-cancel').style.display==='block')renderCancel();
   });
-  db.collection("settings").doc("game").onSnapshot(doc => { if(doc.exists) isAutoResultOn = doc.data().autoResult !== false; else isAutoResultOn = true; });
+  db.collection("settings").doc("game").onSnapshot(doc => {
+
+    const data = doc.exists ? doc.data() : {};
+
+    isAutoResultOn = data.autoResult !== false;
+
+    window.currentAnnouncement = data.announcement || "";
+
+    const announcementBar = document.getElementById('announcement-bar');
+    const announcementText = document.getElementById('announcement-text');
+
+    if(announcementBar && announcementText){
+        if(window.currentAnnouncement){
+            announcementText.textContent = window.currentAnnouncement;
+            announcementBar.style.display = "block";
+        }else{
+            announcementBar.style.display = "none";
+        }
+    }
+
+});
   
   let lastShownResultKey = null;
   db.collection("results").orderBy("date", "desc").limit(1000).onSnapshot(snapshot=>{
