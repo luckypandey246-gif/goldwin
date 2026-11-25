@@ -1789,29 +1789,28 @@ function getClaimedAmount(t) {
         .toLowerCase()
         .replace(/[\s_-]/g, "");
 
-    // 2D MATCH
+    // ========== 2D MATCH ==========
     if (t.is2D) {
         if (!match.D) return 0;
-
         const parts = num.split("-");
-        return match.D[parts[0]] === parts[1]
-            ? points * 90 : 0;
+        return match.D[parts[0]] === parts[1] ? points * 90 : 0;
     }
 
-    // A / B / C RESULT
-    const result = String(match[t.panel] || "");
-    if (!result || result.length !== 3) return 0;
+    // ========== A / B / C RESULT ==========
+    const rawResult = match[t.panel];
+    if (rawResult === undefined || rawResult === null || rawResult === "") return 0;
+
+    const result = String(rawResult).padStart(3, "0");
+    if (result.length !== 3) return 0;
 
     // FRONT PAIR = 900
     if (type.includes("front") || type === "fp") {
-        return result.slice(0, 2) === num
-            ? points * 90 : 0;
+        return result.slice(0, 2) === num ? points * 90 : 0;
     }
 
     // BACK PAIR = 900
     if (type.includes("back") || type === "bp") {
-        return result.slice(1, 3) === num
-            ? points * 90 : 0;
+        return result.slice(1, 3) === num ? points * 90 : 0;
     }
 
     // ANY PAIR = 300
@@ -1821,67 +1820,106 @@ function getClaimedAmount(t) {
             result.slice(1, 3),
             result[0] + result[2]
         ];
-
-        return pairs.includes(num)
-            ? points * 30 : 0;
+        return pairs.includes(num) ? points * 30 : 0;
     }
 
-    // SP - SPLIT PAIR = 900
+    // SPLIT PAIR = 900
     if (type === "sp" || type.includes("split")) {
-        return (result[0] + result[2]) === num
-            ? points * 90 : 0;
+        return (result[0] + result[2]) === num ? points * 90 : 0;
     }
 
-    // STRAIGHT EXACT = 9000
+    // STRAIGHT / EXACT = 9000 (900x)
     if (type.includes("straight") || type.includes("exact")) {
-        return result === num
-            ? points * 900 : 0;
+        return result === num ? points * 900 : 0;
     }
 
-    // BOX DOUBLE = 3000
-    if (num.length === 3 && new Set(num).size < 3) {
-        return result === num
-            ? points * 300 : 0;
+    // ========== BOX LOGIC ==========
+    const uniq   = n => [...new Set(String(n).split(""))].sort().join("");
+    const sorted = n => String(n).split("").sort().join("");
+
+    // BOX TRIPLE (111, 222...) → exact hi, 900x
+    if (num.length === 3 && new Set(num).size === 1) {
+        return result === num ? points * 900 : 0;
     }
 
-    // BOX SINGLE = 1500
-    return result === num
-        ? points * 150 : 0;
+    // BOX DOUBLE (112 = 121 = 211 = 221 = 212 = 122) → 300x
+    if (num.length === 3 && new Set(num).size === 2) {
+        return uniq(num) === uniq(result) ? points * 300 : 0;
+    }
+
+    // BOX SINGLE (123 = 312 = 231 = 132 = 213 = 321) → 150x
+    if (num.length === 3) {
+        return sorted(num) === sorted(result) ? points * 150 : 0;
+    }
+
+    return 0;
 }
 
 
-// ✅ FIXED: String comparison + correct status filter + no reload
-async function claimTicket(pId){
-    const tGroup = boughtTickets.filter(t => 
-        String(t.purchaseId || t.id) === String(pId) && t.status !== 'CLAIMED'
+async function claimTicket(pId) {
+    const tGroup = boughtTickets.filter(t =>
+        String(t.purchaseId || t.id) === String(pId) && t.status !== "CLAIMED"
     );
-    if(tGroup.length === 0) return showCustomAlert("Notice", "No pending winning tickets found.");
-    
-    let totalWin = 0; 
-    tGroup.forEach(t => { totalWin += getClaimedAmount(t); }); 
-    if(totalWin <= 0) return showCustomAlert("Notice", "No winning amount to claim.");
-    
-    showCustomConfirm("Claim Winnings", `Do you want to claim ₹${totalWin}?`, async function(ok){
-        if(ok){
-            try {
-                const batch = db.batch(); 
-                tGroup.forEach(t => { 
-                    if(getClaimedAmount(t) > 0) 
-                        batch.update(db.collection("tickets").doc(t.id), { status: 'CLAIMED' }); 
-                });
-                batch.update(db.collection("users").doc(currentUser.uid), 
-                    { balance: firebase.firestore.FieldValue.increment(totalWin) });
-                await batch.commit(); 
-                playWinSound(); 
-                showCoinSparkles(); 
-                showCustomAlert("🎉 CONGRATULATIONS! 🎉", 
-                    `You have successfully claimed ₹${totalWin} points.`);
-            } catch(e) { 
-                showCustomAlert("Error", e.message); 
+
+    if (tGroup.length === 0) {
+        return showCustomAlert("Notice", "No pending winning tickets found.");
+    }
+
+    let totalWin = 0;
+    tGroup.forEach(t => { totalWin += getClaimedAmount(t); });
+
+    if (totalWin <= 0) {
+        return showCustomAlert("Notice", "No winning amount to claim.");
+    }
+
+    showCustomConfirm("Claim Winnings", `Do you want to claim ₹${totalWin}?`, async function(ok) {
+
+        if (!ok) return;
+
+        try {
+            const batch = db.batch();
+
+            tGroup.forEach(t => {
+                const win = getClaimedAmount(t);
+                if (win > 0) {
+                    batch.update(db.collection("tickets").doc(t.id), {
+                        status: "CLAIMED",
+                        claimedAmount: win,
+                        claimedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                }
+            });
+
+            batch.update(db.collection("users").doc(currentUser.uid), {
+                balance: firebase.firestore.FieldValue.increment(totalWin)
+            });
+
+            await batch.commit();
+
+            // Local state update (no reload)
+            tGroup.forEach(t => {
+                const win = getClaimedAmount(t);
+                if (win > 0) t.status = "CLAIMED";
+            });
+
+            if (currentUser && typeof currentUser.balance === "number") {
+                currentUser.balance += totalWin;
             }
+
+            // UI refresh
+            if (typeof renderBoughtTickets === "function") renderBoughtTickets();
+            if (typeof updateBalanceUI === "function")   updateBalanceUI();
+            if (typeof renderWallet === "function")      renderWallet();
+            if (typeof renderHistory === "function")     renderHistory();
+
+            showCustomAlert("Success", `₹${totalWin} claimed successfully!`);
+
+        } catch (err) {
+            console.error("Claim failed:", err);
+            showCustomAlert("Error", "Claim failed. Please try again.");
         }
     });
-}
+  }
 
 function renderCancel(){
   const list=document.getElementById('cancel-list');if(!list)return;let html=''; const pending=boughtTickets.filter(t=>t.status==='PENDING'); const grouped={};
